@@ -150,13 +150,13 @@ FastAPI ห่อ error ไว้ใน `detail`
 ```json
 {
   "aoi": {"id": "ayutthaya", "name": "Ayutthaya"},
-  "run_id": "run_ayutthaya_0.2.0_b2948de1", "method_version": "0.2.0",
+  "run_id": "run_ayutthaya_0.3.0_b2948de1", "method_version": "0.3.0",
   "area_m2": 11938, "pixels": 4, "pixel_m": 80.0,
-  "score_mean": 87.6, "score_p10": 73.9,
-  "share_poor": 0.0, "share_excluded": 0.0,
-  "components": {"flood_freq": 0.017, "elevation_m": 3.834, "p_flood": 0.022},
+  "score_mean": 48.2, "score_p10": 19.5,
+  "share_poor": 0.5, "share_excluded": 0.0,
+  "components": {"flood_freq": 0.133, "elevation_m": 3.834, "p_flood": 0.173},
   "flags": [],
-  "evidence_url": "/v1/evidence?lat=14.2754&lng=100.6004&run_id=run_ayutthaya_0.2.0_b2948de1",
+  "evidence_url": "/v1/evidence?lat=14.2754&lng=100.6004&run_id=run_ayutthaya_0.3.0_b2948de1",
   "attribution": ["..."]
 }
 ```
