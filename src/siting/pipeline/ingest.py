@@ -143,7 +143,7 @@ def fetch_pair_sar(cat, bbox, date: str, crs="EPSG:32647", res=80):
     return out
 
 
-def pairs_main():
+def main_pairs():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", required=True, type=Path)
     ap.add_argument("--bbox", required=True, nargs=4, type=float)

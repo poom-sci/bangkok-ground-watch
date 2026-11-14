@@ -2,6 +2,7 @@
 
 Site suitability API for SOLSAT: flood history from Sentinel-1 SAR, elevation from Copernicus DEM and land-cover exclusions, with an evidence endpoint that shows which satellite scenes produced each score.
 
+- **Handoff (start here): [HANDOFF.md](HANDOFF.md)**
 - API spec: [docs/API.md](docs/API.md) (+ [docs/openapi.json](docs/openapi.json))
 - Design: [DESIGN.md](DESIGN.md) (draft)
 - Status: M1 — read-only API over the Ayutthaya 2017–2025 data, runs locally

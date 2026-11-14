@@ -56,3 +56,23 @@ def test_subscores_without_recurrence_unchanged():
     fw = np.array([0.0, 0.15, 0.3], "float32")
     f, _ = sc.subscores(fw, np.zeros(3, "float32"))
     assert np.allclose(f, [1, 0.5, 0])
+
+
+def test_run_script_builds_expected_commands():
+    import json
+    from pathlib import Path
+    from siting.pipeline import run
+    cfg = json.loads((Path(__file__).parent.parent / "aois.json").read_text())
+    assert {"ayutthaya", "hatyai", "samutsakhon"} <= set(cfg)
+    cmds = run.commands("hatyai", cfg["hatyai"])
+    flat = [" ".join(c) for c in cmds]
+    assert sum("siting.pipeline.ingest " in f for f in flat) == 2                  # two orbits
+    assert any("--orbit ascending/70" in f for f in flat) and any("--orbit descending/164" in f for f in flat)
+    assert any("siting.pipeline.optical" in f and "--target 2025-11-23" in f for f in flat)
+    assert any("siting.pipeline.ingest_pairs" in f and "--date 2025-12-05" in f for f in flat)
+    build = flat[-1]
+    assert "siting.pipeline.build" in build and "--wet 10 12" in build and "--irradiance" in build
+    assert build.count("--ingested") == 2 and "rawfoo" not in build
+    # an AOI without optical targets skips the optical and pairs steps
+    flat2 = [" ".join(c) for c in run.commands("samutsakhon", cfg["samutsakhon"])]
+    assert not any("optical" in f or "ingest_pairs" in f for f in flat2)

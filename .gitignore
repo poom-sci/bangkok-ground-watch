@@ -6,3 +6,4 @@ data/
 *.npz
 *.npy
 raw/
+*.egg-info/
