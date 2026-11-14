@@ -1,0 +1,27 @@
+[project]
+name = "solsat-siting"
+version = "0.1.0"
+description = "Site suitability API for SOLSAT (SAR flood history, DEM, land cover)"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "pillow>=10",
+  "pyproj>=3.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
