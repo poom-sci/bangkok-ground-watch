@@ -18,6 +18,8 @@ ELIGIBLE_LC = (30, 40, 50)  # grassland, cropland, built-up: used to learn P(flo
 EXCLUDED_LC = {10: "tree_cover", 80: "water_body", 90: "wetland"}
 BIN_M = 0.5
 MIN_BIN_N = 200
+RECUR_MIN_SCENES = 2      # a year counts as flooded when >= this many wet scenes show water
+RECUR_CAP = 0.25           # flooded in >= 25% of observed years gives recurrence subscore 0
 FLOODED_FREQ = 0.1         # a pixel counts as "flooded" when wet-season freq exceeds this
 
 
@@ -37,6 +39,19 @@ def water_stats(db: np.ndarray, months: np.ndarray, wet_months=WET_MONTHS):
     perm = (water[dry].sum(0) / np.maximum(ok[dry].sum(0), 1)) > PERM_WATER_SHARE
     fw = water[wet].sum(0) / np.maximum(ok[wet].sum(0), 1)
     return fw.astype("float32"), perm
+
+
+def flood_year_share(db: np.ndarray, months: np.ndarray, years: np.ndarray, wet_months=WET_MONTHS):
+    """Share of observed years in which a pixel showed water in >= RECUR_MIN_SCENES wet scenes.
+    Unlike frequency over scenes, one severe flood year is not diluted by many dry scenes."""
+    wet, _ = season_masks(months, wet_months)
+    water = np.isfinite(db) & (db < WATER_DB)
+    flooded, observed = 0, 0
+    for y in np.unique(years[wet]):
+        m = wet & (years == y)
+        observed += 1
+        flooded = flooded + (water[m].sum(0) >= RECUR_MIN_SCENES)
+    return (flooded / max(observed, 1)).astype("float32")
 
 
 def smooth_elevation(dem: np.ndarray) -> np.ndarray:
@@ -71,8 +86,11 @@ def exclusion_mask(landcover: np.ndarray, perm: np.ndarray) -> np.ndarray:
     return ex
 
 
-def subscores(fw, pf):
+def subscores(fw, pf, recur=None):
+    """Flood subscore is the worse of: how often scenes show water, and how many years flooded."""
     f_flood = np.clip(1 - fw / FREQ_CAP, 0, 1)
+    if recur is not None:
+        f_flood = np.minimum(f_flood, np.clip(1 - recur / RECUR_CAP, 0, 1))
     f_elev = 1 - pf / max(float(pf.max()), 1e-9)
     return f_flood.astype("float32"), f_elev.astype("float32")
 

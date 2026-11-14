@@ -49,7 +49,9 @@ def build_aoi(*, aoi_id: str, name: str, grid: Grid, db: np.ndarray, months: np.
     eligible = ~perm & np.isin(landcover, sc.ELIGIBLE_LC)
     edges, p = sc.learn_flood_prob(elev, fw, eligible)
     pf = sc.apply_flood_prob(elev, edges, p)
-    f_flood, f_elev = sc.subscores(fw, pf)
+    years = np.array([int(str(d)[:4]) for d in dates])
+    recur = sc.flood_year_share(db, months, years, wet_months)
+    f_flood, f_elev = sc.subscores(fw, pf, recur)
     excluded = sc.exclusion_mask(landcover, perm)
     score = sc.combine(f_flood, f_elev, excluded)
 
@@ -57,7 +59,7 @@ def build_aoi(*, aoi_id: str, name: str, grid: Grid, db: np.ndarray, months: np.
     scene_hash = "sha256:" + hashlib.sha256("|".join(map(str, dates)).encode()).hexdigest()
     params = {"water_db": sc.WATER_DB, "wet_months": list(range(wet_months[0], wet_months[1] + 1)),
               "dry_max_month": sc.DRY_MAX_MONTH, "perm_water_share": sc.PERM_WATER_SHARE,
-              "w_flood": sc.W_FLOOD, "w_elev": sc.W_ELEV, "freq_cap": sc.FREQ_CAP,
+              "w_flood": sc.W_FLOOD, "w_elev": sc.W_ELEV, "freq_cap": sc.FREQ_CAP, "recur_min_scenes": sc.RECUR_MIN_SCENES, "recur_cap": sc.RECUR_CAP,
               "bin_m": sc.BIN_M, "pixel_m": grid.pixel_m}
     run_id = "run_%s_%s_%s" % (aoi_id, METHOD_VERSION, scene_hash[7:15])
     meta = {
@@ -76,7 +78,7 @@ def build_aoi(*, aoi_id: str, name: str, grid: Grid, db: np.ndarray, months: np.
     out_dir = Path(out_dir) / aoi_id
     out_dir.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out_dir / "layers.npz", score=score, water_freq_wet=fw, perm_water=perm,
-                        elev=elev, p_flood=pf, f_flood=f_flood, f_elev=f_elev,
+                        elev=elev, p_flood=pf, flood_year_share=recur, f_flood=f_flood, f_elev=f_elev,
                         landcover=landcover.astype("uint8"))
     np.savez_compressed(out_dir / "scenes.npz", db=db.astype("float16"),
                         months=months.astype("int8"), dates=dates.astype(str), orbits=np.asarray(orbits).astype(str))

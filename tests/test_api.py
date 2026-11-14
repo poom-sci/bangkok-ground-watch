@@ -26,7 +26,7 @@ def test_grid_roundtrip(synth_grid):
 def test_healthz_and_coverage(client):
     assert client.get("/healthz").json()["ok"] is True
     cov = client.get("/v1/coverage").json()["aois"]
-    assert cov[0]["id"] == "synth" and cov[0]["run_id"].startswith("run_synth_0.1.0_")
+    assert cov[0]["id"] == "synth" and cov[0]["run_id"].startswith("run_synth_0.2.0_")
 
 
 def test_high_dry_ground_scores_good(client, synth_grid):

@@ -35,3 +35,24 @@ def test_combine_weights_and_exclusion():
 
 def test_grade_thresholds():
     assert sc.grade(70) == "good" and sc.grade(69.9) == "fair" and sc.grade(49.9) == "poor"
+
+
+def test_one_severe_flood_year_is_not_diluted():
+    # 3 years x 10 wet scenes; the pixel is water in 3 scenes of 2025 only
+    months = np.tile(np.array([8, 9, 10, 11] * 3)[:10], 3)
+    years = np.repeat([2023, 2024, 2025], 10)
+    db = np.full((30, 1, 2), -8.0, "float32")
+    db[20:23, 0, 0] = -20          # 3 flooded scenes in 2025
+    db[5, 0, 1] = -20              # a single stray dark scene in 2024 (speckle)
+    fw, _ = sc.water_stats(db, months)
+    share = sc.flood_year_share(db, months, years)
+    assert np.isclose(share[0, 0], 1 / 3) and share[0, 1] == 0      # one flood year; stray scene ignored
+    assert fw[0, 0] < 0.15                                           # frequency alone barely sees it
+    f_flood, _ = sc.subscores(fw, np.zeros_like(fw), share)
+    assert f_flood[0, 0] == 0 and f_flood[0, 1] > 0.85               # recurrence cap bites; stray scene does not
+
+
+def test_subscores_without_recurrence_unchanged():
+    fw = np.array([0.0, 0.15, 0.3], "float32")
+    f, _ = sc.subscores(fw, np.zeros(3, "float32"))
+    assert np.allclose(f, [1, 0.5, 0])

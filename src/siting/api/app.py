@@ -17,6 +17,7 @@ LC_LABELS = {10: "tree cover", 20: "shrubland", 30: "grassland", 40: "cropland",
              60: "bare / sparse", 70: "snow / ice", 80: "permanent water", 90: "herbaceous wetland",
              95: "mangroves", 100: "moss / lichen"}
 VEGETATED_LC = (30, 40)
+BUILT_LC = 50
 LAYER_ARRAYS = {"elev": "elev", "water_freq_wet": "water_freq_wet", "landcover": "landcover", "score": "score"}
 
 
@@ -51,6 +52,8 @@ def create_app(data_dir: str | Path | None = None) -> FastAPI:
             out.append("few_wet_scenes")
         if int(L["landcover"][r, c]) in VEGETATED_LC:
             out.append("vegetated_flooding_not_detected")
+        if int(L["landcover"][r, c]) == BUILT_LC:
+            out.append("urban_flooding_not_detected")  # VV rises over flooded buildings (double bounce)
         out.append("elevation_is_dsm")
         win = L["perm_water"][max(r - 2, 0):r + 3, max(c - 2, 0):c + 3]
         if win.any():
@@ -102,6 +105,7 @@ def create_app(data_dir: str | Path | None = None) -> FastAPI:
             "grade": sc.grade(score) if has_score else None,
             "components": {
                 "flood": {"value": _f(L["water_freq_wet"][r, c]), "unit": "share of wet-season scenes with water",
+                          "years_flooded_share": _f(L["flood_year_share"][r, c]) if "flood_year_share" in L else None,
                           "subscore": _f(L["f_flood"][r, c]), "weight": sc.W_FLOOD},
                 "elevation": {"value": _f(L["elev"][r, c], 1), "unit": "m (Copernicus DEM, a surface model)",
                               "p_flood": _f(L["p_flood"][r, c]), "subscore": _f(L["f_elev"][r, c]),
