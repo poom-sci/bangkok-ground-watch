@@ -76,3 +76,23 @@ def test_chips_are_png(client, synth_grid):
     assert bad.status_code == 422
     both = client.get("/v1/evidence/chip", params={**p, "layer": "elev", "scene_id": "x"})
     assert both.status_code == 422
+
+
+def test_scene_ids_follow_orbit_and_wet_months_are_per_aoi(tmp_path, synth_grid):
+    import numpy as np
+    from siting.pipeline.build import build_aoi
+    n = synth_grid.height
+    months = np.array([10, 11, 12, 2, 3])
+    dates = np.array(["2024-10-05", "2024-11-06", "2024-12-07", "2024-02-02", "2024-03-03"])
+    orbits = np.array(["ascending/70", "descending/164", "ascending/70", "ascending/70", "ascending/70"])
+    db = np.full((5, n, n), -8.0, "float32")
+    db[:3, :, :10] = -20.0                      # flooded in all Oct-Dec scenes
+    build_aoi(aoi_id="south", name="South", grid=synth_grid, db=db, months=months, dates=dates,
+              dem=np.full((n, n), 3.0, "float32"), landcover=np.full((n, n), 40, "uint8"),
+              out_dir=tmp_path, wet_months=(10, 12), orbits=orbits)
+    c = TestClient(create_app(tmp_path))
+    e = c.get("/v1/evidence", params=point(synth_grid, 30, 5)).json()
+    assert e["method"]["wet_months"] == [10, 11, 12]
+    assert [s["scene_id"] for s in e["scenes"]][:2] == ["s1rtc-asc70-2024-10-05", "s1rtc-desc164-2024-11-06"]
+    assert e["summary"] == {"scenes_total": 5, "scenes_wet": 3, "wet_scenes_with_water": 3, "wet_scenes_valid": 3}
+    assert c.get(e["scenes"][3]["chip_url"]).status_code == 200

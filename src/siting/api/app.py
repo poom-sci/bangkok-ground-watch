@@ -122,17 +122,19 @@ def create_app(data_dir: str | Path | None = None) -> FastAPI:
         vv = aoi.db[:, r, c].astype("float32")
         ok = np.isfinite(vv)
         water = ok & (vv < sc.WATER_DB)
-        wet, _ = sc.season_masks(aoi.months)
+        wm = aoi.meta["params"]["wet_months"]
+        wet, _ = sc.season_masks(aoi.months, (wm[0], wm[-1]))
         bbox = ",".join(f"{v:.5f}" for v in m["aoi"]["bbox"])
         q = lambda **kw: urlencode({"lat": lat, "lng": lng, "run_id": aoi.run_id, **kw})  # noqa: E731
         scenes = []
         for i in range(len(vv)):
             d = str(aoi.dates[i])
+            sid = aoi.scene_ids[i]
             scenes.append({
-                "scene_id": f"s1rtc-desc62-{d}", "acquired_at": d, "platform": "sentinel-1",
-                "orbit": "descending/62", "season": "wet" if wet[i] else "dry",
+                "scene_id": sid, "acquired_at": d, "platform": "sentinel-1",
+                "orbit": str(aoi.orbits[i]), "season": "wet" if wet[i] else "dry",
                 "vv_db": _f(vv[i], 2), "is_water": bool(water[i]),
-                "chip_url": f"/v1/evidence/chip?{q(scene_id=f's1rtc-desc62-{d}')}",
+                "chip_url": f"/v1/evidence/chip?{q(scene_id=sid)}",
                 "stac_item_id": None,
                 "source_url": ("https://planetarycomputer.microsoft.com/api/stac/v1/search?"
                                + urlencode({"collections": "sentinel-1-rtc", "bbox": bbox,
@@ -173,10 +175,9 @@ def create_app(data_dir: str | Path | None = None) -> FastAPI:
         aoi, (r, c) = locate(lat, lng, run_id)
         half = max(int(size_m / aoi.grid.pixel_m / 2), 2)
         if scene_id:
-            dates = [f"s1rtc-desc62-{d}" for d in aoi.dates]
-            if scene_id not in dates:
+            if scene_id not in aoi.scene_ids:
                 raise HTTPException(404, {"error": "unknown_scene"})
-            a = aoi.db[dates.index(scene_id)].astype("float32")
+            a = aoi.db[aoi.scene_ids.index(scene_id)].astype("float32")
             mask = (np.isfinite(a) & (a < sc.WATER_DB)) if overlay == "water_mask" else None
             png = chipr.render(a, "sar", r, c, half, water_mask=mask)
         else:

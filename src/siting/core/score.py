@@ -21,17 +21,19 @@ MIN_BIN_N = 200
 FLOODED_FREQ = 0.1         # a pixel counts as "flooded" when wet-season freq exceeds this
 
 
-def season_masks(months: np.ndarray):
-    wet = (months >= WET_MONTHS[0]) & (months <= WET_MONTHS[1])
-    dry = months <= DRY_MAX_MONTH
+def season_masks(months: np.ndarray, wet_months=WET_MONTHS, dry_max_month=DRY_MAX_MONTH):
+    """wet_months is an inclusive (first, last) month range; it differs per region
+    (Aug-Nov in the central plain, Oct-Dec in the south)."""
+    wet = (months >= wet_months[0]) & (months <= wet_months[1])
+    dry = months <= dry_max_month
     return wet, dry
 
 
-def water_stats(db: np.ndarray, months: np.ndarray):
+def water_stats(db: np.ndarray, months: np.ndarray, wet_months=WET_MONTHS):
     """db: (T,H,W) VV in dB with NaN for no data. Returns (water_freq_wet, permanent_water)."""
     ok = np.isfinite(db)
     water = ok & (db < WATER_DB)
-    wet, dry = season_masks(months)
+    wet, dry = season_masks(months, wet_months)
     perm = (water[dry].sum(0) / np.maximum(ok[dry].sum(0), 1)) > PERM_WATER_SHARE
     fw = water[wet].sum(0) / np.maximum(ok[wet].sum(0), 1)
     return fw.astype("float32"), perm

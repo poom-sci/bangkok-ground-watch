@@ -18,6 +18,8 @@ class Aoi:
     db: np.ndarray        # (T,H,W) float16
     months: np.ndarray
     dates: np.ndarray
+    orbits: np.ndarray
+    scene_ids: list
 
     @property
     def id(self) -> str:
@@ -36,7 +38,11 @@ class Store:
             meta = json.loads(meta_path.read_text())
             layers = dict(np.load(d / "layers.npz"))
             sc = np.load(d / "scenes.npz")
-            aoi = Aoi(meta, Grid.from_dict(meta["grid"]), layers, sc["db"], sc["months"], sc["dates"])
+            dates = sc["dates"]
+            orbits = sc["orbits"] if "orbits" in sc.files else np.array(["descending/62"] * len(dates))
+            ids = [f"s1rtc-{o.replace('descending', 'desc').replace('ascending', 'asc').replace('/', '')}-{d}"
+                   for o, d in zip(orbits, dates)]
+            aoi = Aoi(meta, Grid.from_dict(meta["grid"]), layers, sc["db"], sc["months"], dates, orbits, ids)
             self.aois[aoi.id] = aoi
 
     def find(self, lat: float, lng: float):
