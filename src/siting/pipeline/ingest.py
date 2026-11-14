@@ -39,13 +39,17 @@ def fetch_sar_year(cat, bbox, year, orbit_state, rel_orbit, wet, crs, res):
     if not sel:
         return None
     sel = [planetary_computer.sign(i) for i in sel]
-    ds = odc.stac.load(sel, bands=["vv"], bbox=bbox, crs=crs, resolution=res, resampling="average",
+    ds = odc.stac.load(sel, bands=["vv", "vh"], bbox=bbox, crs=crs, resolution=res, resampling="average",
                        dtype="float32", chunks={"x": 512, "y": 512, "time": 1}, groupby="solar_day")
-    vv = ds.vv.compute(scheduler="threads", num_workers=8).values
-    ok = np.isfinite(vv) & (vv > 0)
-    db = np.where(ok, 10 * np.log10(np.where(ok, vv, 1)), np.nan)
+    ds = ds.compute(scheduler="threads", num_workers=8)
+
+    def to_db(a):
+        ok = np.isfinite(a) & (a > 0)
+        return np.where(ok, 10 * np.log10(np.where(ok, a, 1)), np.nan).astype("float16")
+
+    db, vh = to_db(ds.vv.values), to_db(ds.vh.values)
     gb = ds.odc.geobox
-    return dict(db=db.astype("float16"), months=ds.time.dt.month.values,
+    return dict(db=db, vh=vh, months=ds.time.dt.month.values,
                 dates=ds.time.dt.strftime("%Y-%m-%d").values,
                 transform=np.array(gb.transform)[:6], crs=str(gb.crs))
 
@@ -77,7 +81,18 @@ def ingest(raw: Path, bbox, orbit: str, wet, years, crs="EPSG:32647", res=80):
         if fn.exists():
             continue
         t0 = time.time()
-        r = fetch_sar_year(cat, bbox, yr, state, int(rel), wet, crs, res)
+        r, err = None, None
+        for attempt in range(3):   # transient blob read errors happen; re-sign and retry
+            try:
+                r = fetch_sar_year(cat, bbox, yr, state, int(rel), wet, crs, res)
+                err = None
+                break
+            except Exception as e:  # noqa: BLE001
+                err = e
+                print(yr, "attempt", attempt + 1, "failed:", str(e)[:80], flush=True)
+                time.sleep(10)
+        if err is not None:
+            raise err
         if r is None:
             print(yr, "no scenes", flush=True)
             continue
@@ -103,3 +118,41 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def fetch_pair_sar(cat, bbox, date: str, crs="EPSG:32647", res=80):
+    """VV and VH (dB) for every Sentinel-1 RTC item on one calendar date (any orbit), mosaicked."""
+    import datetime as dt
+    import odc.stac
+    import planetary_computer
+    d0 = dt.date.fromisoformat(date)
+    items = [i for i in cat.search(collections=["sentinel-1-rtc"], bbox=bbox,
+                                   datetime=f"{d0}/{d0 + dt.timedelta(days=1)}").items()
+             if i.datetime.strftime("%Y-%m-%d") == date]
+    if not items:
+        return None
+    items = [planetary_computer.sign(i) for i in items]
+    ds = odc.stac.load(items, bands=["vv", "vh"], bbox=bbox, crs=crs, resolution=res, resampling="average",
+                       dtype="float32", groupby="solar_day").isel(time=0).compute()
+    out = {}
+    for b in ("vv", "vh"):
+        a = ds[b].values
+        out[b] = np.where(np.isfinite(a) & (a > 0), 10 * np.log10(np.where(a > 0, a, 1)), np.nan).astype("float16")
+    out["date"] = date
+    out["orbits"] = ",".join(sorted({f"{i.properties.get('sat:orbit_state')}/{i.properties.get('sat:relative_orbit')}" for i in items}))
+    return out
+
+
+def pairs_main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--raw", required=True, type=Path)
+    ap.add_argument("--bbox", required=True, nargs=4, type=float)
+    ap.add_argument("--date", required=True, action="append")
+    a = ap.parse_args()
+    cat = _catalog()
+    (a.raw / "pairs").mkdir(parents=True, exist_ok=True)
+    for d in a.date:
+        r = fetch_pair_sar(cat, a.bbox, d)
+        print(d, "no scene" if r is None else r["orbits"], flush=True)
+        if r is not None:
+            np.savez_compressed(a.raw / "pairs" / f"{d}.npz", **r)

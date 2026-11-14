@@ -8,7 +8,8 @@ from __future__ import annotations
 import numpy as np
 from scipy.ndimage import median_filter, uniform_filter
 
-WATER_DB = -15.0           # VV below this counts as water
+WATER_DB = -15.0           # VV below this counts as water (method 0.2.0, AOIs without VH)
+WATER_VH_DB = -18.0        # VH below this counts as water (method 0.3.0), see calibrate.py
 WET_MONTHS = (8, 11)       # Aug..Nov
 DRY_MAX_MONTH = 3          # Feb..Mar scenes are used for permanent water
 PERM_WATER_SHARE = 0.5
@@ -31,21 +32,22 @@ def season_masks(months: np.ndarray, wet_months=WET_MONTHS, dry_max_month=DRY_MA
     return wet, dry
 
 
-def water_stats(db: np.ndarray, months: np.ndarray, wet_months=WET_MONTHS):
+def water_stats(db: np.ndarray, months: np.ndarray, wet_months=WET_MONTHS, threshold=WATER_DB):
     """db: (T,H,W) VV in dB with NaN for no data. Returns (water_freq_wet, permanent_water)."""
     ok = np.isfinite(db)
-    water = ok & (db < WATER_DB)
+    water = ok & (db < threshold)
     wet, dry = season_masks(months, wet_months)
     perm = (water[dry].sum(0) / np.maximum(ok[dry].sum(0), 1)) > PERM_WATER_SHARE
     fw = water[wet].sum(0) / np.maximum(ok[wet].sum(0), 1)
     return fw.astype("float32"), perm
 
 
-def flood_year_share(db: np.ndarray, months: np.ndarray, years: np.ndarray, wet_months=WET_MONTHS):
+def flood_year_share(db: np.ndarray, months: np.ndarray, years: np.ndarray, wet_months=WET_MONTHS,
+                     threshold=WATER_DB):
     """Share of observed years in which a pixel showed water in >= RECUR_MIN_SCENES wet scenes.
     Unlike frequency over scenes, one severe flood year is not diluted by many dry scenes."""
     wet, _ = season_masks(months, wet_months)
-    water = np.isfinite(db) & (db < WATER_DB)
+    water = np.isfinite(db) & (db < threshold)
     flooded, observed = 0, 0
     for y in np.unique(years[wet]):
         m = wet & (years == y)
@@ -79,8 +81,10 @@ def apply_flood_prob(elev, edges, p):
     return p[np.clip(idx - 1, 0, len(p) - 1)].astype("float32")
 
 
-def exclusion_mask(landcover: np.ndarray, perm: np.ndarray) -> np.ndarray:
+def exclusion_mask(landcover: np.ndarray, perm: np.ndarray, protected: np.ndarray | None = None) -> np.ndarray:
     ex = perm.copy()
+    if protected is not None:
+        ex |= protected
     for code in EXCLUDED_LC:
         ex |= landcover == code
     return ex

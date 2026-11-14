@@ -20,6 +20,20 @@ class Aoi:
     dates: np.ndarray
     orbits: np.ndarray
     scene_ids: list
+    optical: dict | None = None
+    vh: np.ndarray | None = None
+
+    @property
+    def water_band(self) -> str:
+        return self.meta["params"].get("water_band", "vv")
+
+    @property
+    def water_db(self) -> float:
+        return self.meta["params"].get("water_db", -15.0)
+
+    def band(self):
+        """Array the water rule is applied to (VH when the AOI was built with it)."""
+        return self.vh if self.water_band == "vh" and self.vh is not None else self.db
 
     @property
     def id(self) -> str:
@@ -43,6 +57,12 @@ class Store:
             ids = [f"s1rtc-{o.replace('descending', 'desc').replace('ascending', 'asc').replace('/', '')}-{d}"
                    for o, d in zip(orbits, dates)]
             aoi = Aoi(meta, Grid.from_dict(meta["grid"]), layers, sc["db"], sc["months"], dates, orbits, ids)
+            if "vh" in sc.files:
+                aoi.vh = sc["vh"]
+            if (d / "optical.npz").exists():
+                o = np.load(d / "optical.npz")
+                aoi.optical = {"rgb": o["rgb"], "mndwi": o["mndwi"], "dates": [str(x) for x in o["dates"]],
+                               "cloud": o["cloud"]}
             self.aois[aoi.id] = aoi
 
     def find(self, lat: float, lng: float):

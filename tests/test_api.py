@@ -96,3 +96,60 @@ def test_scene_ids_follow_orbit_and_wet_months_are_per_aoi(tmp_path, synth_grid)
     assert [s["scene_id"] for s in e["scenes"]][:2] == ["s1rtc-asc70-2024-10-05", "s1rtc-desc164-2024-11-06"]
     assert e["summary"] == {"scenes_total": 5, "scenes_wet": 3, "wet_scenes_with_water": 3, "wet_scenes_valid": 3}
     assert c.get(e["scenes"][3]["chip_url"]).status_code == 200
+
+
+def test_vh_rule_is_used_when_aoi_has_vh(tmp_path, synth_grid):
+    import numpy as np
+    from siting.pipeline.build import build_aoi
+    n = synth_grid.height
+    months = np.array([8, 9, 10, 11, 2, 3])
+    dates = np.array(["2024-08-05", "2024-09-06", "2024-10-07", "2024-11-08", "2024-02-02", "2024-03-03"])
+    vv = np.full((6, n, n), -8.0, "float32")         # VV says dry everywhere (too bright to be water)
+    vh = np.full((6, n, n), -14.0, "float32")
+    vh[:4, :, :10] = -22.0                           # VH sees flooding on the left in every wet scene
+    build_aoi(aoi_id="vh", name="VH", grid=synth_grid, db=vv, vh=vh, months=months, dates=dates,
+              dem=np.full((n, n), 3.0, "float32"), landcover=np.full((n, n), 40, "uint8"), out_dir=tmp_path)
+    c = TestClient(create_app(tmp_path))
+    e = c.get("/v1/evidence", params=point(synth_grid, 30, 5)).json()
+    assert e["method"]["version"] == "0.3.0" and e["method"]["water_rule"] == "VH_dB < -18"
+    assert e["summary"]["wet_scenes_with_water"] == 4 and e["scenes"][0]["vh_db"] == -22.0
+    assert c.get("/v1/suitability", params=point(synth_grid, 30, 5)).json()["components"]["flood"]["value"] == 1.0
+    assert c.get("/v1/suitability", params=point(synth_grid, 30, 30)).json()["components"]["flood"]["value"] == 0.0
+    chip = c.get(e["scenes"][0]["chip_url"] + "&band=vh&overlay=water_mask")
+    assert chip.status_code == 200 and chip.content[:4] == b"\x89PNG"
+
+
+def square(grid, r, c, half):
+    ring = [grid.rc_to_lonlat(r + dr, c + dc) for dr, dc in ((-half, -half), (-half, half), (half, half), (half, -half), (-half, -half))]
+    return {"type": "Polygon", "coordinates": [[list(p) for p in ring]]}
+
+
+def test_area_endpoint_stats_and_limits(client, synth_grid):
+    g = square(synth_grid, 30, 40, 4)                       # dry high ground, about 9x9 pixels
+    r = client.post("/v1/suitability/area", json={"geometry": g}).json()
+    assert r["pixels"] > 40 and r["score_mean"] >= 90 and r["share_excluded"] == 0 and r["flags"] == []
+    low = client.post("/v1/suitability/area", json={"geometry": square(synth_grid, 30, 12, 2)}).json()
+    assert low["share_poor"] == 1.0
+    mixed = client.post("/v1/suitability/area", json={"geometry": square(synth_grid, 30, 52, 4)}).json()
+    assert 0 < mixed["share_excluded"] < 1                  # straddles the tree-cover edge
+    tiny = client.post("/v1/suitability/area", json={"geometry": square(synth_grid, 30, 40, 0.01)}).json()
+    assert tiny["flags"] == ["smaller_than_pixel"] and tiny["pixels"] == 1 and tiny["score_mean"] >= 90
+    assert client.post("/v1/suitability/area", json={"nope": 1}).status_code == 422
+    assert client.post("/v1/suitability/area", json={"geometry": {"type": "Point", "coordinates": [0, 0]}}).status_code == 422
+    big = {"type": "Polygon", "coordinates": [[[100.5, 14.2], [100.9, 14.2], [100.9, 14.5], [100.5, 14.5], [100.5, 14.2]]]}
+    assert client.post("/v1/suitability/area", json={"geometry": big}).status_code in (404, 422)
+
+
+def test_protected_area_excludes(tmp_path, synth_grid):
+    import numpy as np
+    from siting.pipeline.build import build_aoi
+    n = synth_grid.height
+    months = np.array([8, 9, 2, 3]); dates = np.array(["2024-08-05", "2024-09-06", "2024-02-02", "2024-03-03"])
+    prot = square(synth_grid, 30, 30, 5)
+    build_aoi(aoi_id="p", name="P", grid=synth_grid, db=np.full((4, n, n), -8.0, "float32"), months=months, dates=dates,
+              dem=np.full((n, n), 3.0, "float32"), landcover=np.full((n, n), 40, "uint8"), out_dir=tmp_path,
+              protected_geojson=[prot])
+    c = TestClient(create_app(tmp_path))
+    inside = c.get("/v1/suitability", params=point(synth_grid, 30, 30)).json()
+    outside = c.get("/v1/suitability", params=point(synth_grid, 5, 5)).json()
+    assert inside["score"] is None and "protected_area" in inside["exclusions"] and outside["score"] is not None

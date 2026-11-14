@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw
 # (value, rgb) stops; linear interpolation
 RAMPS = {
     "sar": ([-20, -15, -10, -5, 0], [(0, 0, 0), (40, 40, 60), (130, 130, 130), (210, 210, 210), (255, 255, 255)]),
+    "sar_vh": ([-30, -25, -18, -12, -5], [(0, 0, 0), (40, 40, 60), (130, 130, 130), (210, 210, 210), (255, 255, 255)]),
     "water_freq_wet": ([0, 0.3, 0.6, 1.0], [(247, 251, 255), (158, 202, 225), (49, 130, 189), (8, 48, 107)]),
     "elev": ([1, 3, 5, 8], [(0, 104, 55), (166, 217, 106), (253, 224, 139), (140, 90, 60)]),
     "score": ([0, 50, 70, 100], [(215, 48, 39), (254, 224, 139), (166, 217, 106), (26, 152, 80)]),
@@ -31,6 +32,8 @@ def _ramp(a: np.ndarray, kind: str) -> np.ndarray:
 
 
 def colorize(a: np.ndarray, kind: str) -> np.ndarray:
+    if kind == "rgb":
+        return a.copy()
     if kind == "landcover":
         out = np.zeros(a.shape + (3,), dtype="uint8")
         out[:] = NODATA
@@ -43,7 +46,7 @@ def colorize(a: np.ndarray, kind: str) -> np.ndarray:
 def render(a: np.ndarray, kind: str, row: int, col: int, half_px: int, out_px: int = 512,
            water_mask: np.ndarray | None = None) -> bytes:
     """Window of 2*half_px+1 pixels around (row, col), upscaled with nearest neighbour."""
-    H, W = a.shape
+    H, W = a.shape[:2]
     r0, r1 = max(row - half_px, 0), min(row + half_px + 1, H)
     c0, c1 = max(col - half_px, 0), min(col + half_px + 1, W)
     rgb = colorize(a[r0:r1, c0:c1], kind)

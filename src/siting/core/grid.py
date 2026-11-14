@@ -55,6 +55,11 @@ class Grid:
             return None
         return int(row), int(col)
 
+    def lonlat_to_rc_float(self, lon: float, lat: float):
+        """Fractional (row, col) without bounds checking."""
+        x, y = self._fwd().transform(lon, lat)
+        return (y - self.f) / self.e, (x - self.c) / self.a
+
     def rc_to_lonlat(self, row: float, col: float):
         x = self.c + self.a * (col + 0.5)
         y = self.f + self.e * (row + 0.5)
