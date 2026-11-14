@@ -1,9 +1,9 @@
-.venv/
-raw/
-prototype/
-tests/
-__pycache__/
-*.pyc
-.git/
-docs/
-*.md
+# allow-list: only what the image needs
+*
+!pyproject.toml
+!uv.lock
+!.python-version
+!README.md
+!src/**
+!data/**
+data/.gitkeep

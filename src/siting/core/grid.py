@@ -1,4 +1,5 @@
 """North-up raster grid with an affine transform, plus lon/lat <-> row/col."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,16 +25,20 @@ class Grid:
             raise ValueError("only north-up grids are supported")
 
     @classmethod
-    def from_affine(cls, affine6, crs: str, height: int, width: int) -> "Grid":
+    def from_affine(cls, affine6, crs: str, height: int, width: int) -> Grid:
         a, b, c, d, e, f = (float(v) for v in affine6)
         return cls(a, b, c, d, e, f, str(crs), int(height), int(width))
 
     def to_dict(self) -> dict:
-        return {"affine": [self.a, self.b, self.c, self.d, self.e, self.f],
-                "crs": self.crs, "height": self.height, "width": self.width}
+        return {
+            "affine": [self.a, self.b, self.c, self.d, self.e, self.f],
+            "crs": self.crs,
+            "height": self.height,
+            "width": self.width,
+        }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Grid":
+    def from_dict(cls, d: dict) -> Grid:
         return cls.from_affine(d["affine"], d["crs"], d["height"], d["width"])
 
     @property

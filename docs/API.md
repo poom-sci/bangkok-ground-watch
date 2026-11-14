@@ -2,7 +2,7 @@
 
 บริการอ่านอย่างเดียวที่ตอบ **คะแนนความเหมาะสมของพื้นที่** (site suitability) สำหรับตั้งโรงงานที่จะติดโซลาร์ พร้อม **หลักฐาน** ว่าคะแนนมาจากภาพดาวเทียมอะไร
 
-- สัญญา (contract) แบบเครื่องอ่านได้: [`openapi.json`](openapi.json) (สร้างจาก FastAPI) หน้าทดลองตอนรันอยู่ที่ `/docs`
+- สัญญา (contract) แบบเครื่องอ่านได้: [`openapi.json`](openapi.json) สร้างจาก pydantic model ใน `src/siting/api/schemas.py` (ทุก request/response มี schema; **เทสต์และ CI ตรวจว่าไฟล์นี้ตรงกับโค้ด**) หน้าทดลองตอนรันอยู่ที่ `/docs` และ `/redoc`
 - ที่มาของวิธีคิด: [`../DESIGN.md`](../DESIGN.md) ข้อ 5 และผลสอบเทียบข้อ 11
 - ตัวอย่างทุก response ด้านล่างมาจาก server ที่รันจริง (ตัดบางส่วน)
 
@@ -20,7 +20,8 @@
 | ความสามารถ | **อ่านอย่างเดียว** ไม่มี endpoint เขียน ไม่ดึงภาพจากภายนอกตอนรับ request |
 | พื้นที่ที่ตอบได้ | เฉพาะ AOI ที่ประมวลผลไว้ล่วงหน้า (ดู `/v1/coverage`) นอกนั้น `404 outside_coverage` |
 | ความละเอียด | 80 ม./pixel ใช้ประเมินระดับย่านได้ ไม่ใช่ระดับหลังคา |
-| CORS | ยังไม่ได้ตั้งค่า (ถ้าหน้าบ้านเรียกตรงต้องเพิ่ม) |
+| CORS | **ปิดเป็นค่าเริ่มต้น** เปิดด้วย `SITING_CORS_ORIGINS=https://app.example.com,...` (เฉพาะ GET/POST) |
+| การบีบอัด | gzip อัตโนมัติสำหรับ response ที่ใหญ่กว่า 1 KB |
 
 ### Versioning และความเข้ากันได้
 - `/v1` รับประกันว่า **จะเพิ่มฟิลด์ได้ แต่ไม่เปลี่ยนชื่อ ไม่ลบ ไม่เปลี่ยนความหมาย** ผู้เรียกต้องไม่พังเมื่อเจอฟิลด์ใหม่
@@ -45,7 +46,8 @@ FastAPI ห่อ error ไว้ใน `detail`
 
 | Method | Path | ใช้ทำอะไร |
 |---|---|---|
-| GET | `/healthz` | health check และรายการ AOI ที่โหลดอยู่ |
+| GET | `/healthz` | liveness: ตอบ 200 เมื่อโปรเซสทำงาน พร้อมรายการ AOI ที่โหลดอยู่ |
+| GET | `/readyz` | readiness: 200 เมื่อโหลด AOI อย่างน้อย 1 แห่ง ไม่เช่นนั้น **503** |
 | GET | `/v1/coverage` | รายการ AOI พร้อม bbox, run และเวอร์ชันวิธี |
 | GET | `/v1/runs/{run_id}` | พารามิเตอร์ทั้งหมดของรอบประมวลผล |
 | GET | `/v1/suitability` | **คะแนนของจุดเดียว** |
@@ -254,14 +256,14 @@ FastAPI ห่อ error ไว้ใน `detail`
 
 ## 5. รันและทดสอบ
 ```bash
-.venv/bin/pip install -e '.[dev]' && .venv/bin/python -m pytest        # 18 tests
-SITING_DATA=data PYTHONPATH=src .venv/bin/uvicorn siting.api.app:app --factory --port 8780
+uv sync && make check          # lint, type check, openapi, 29 tests
+make run                       # http://localhost:8780/docs
 ```
 สร้างข้อมูล AOI: `siting.pipeline.ingest` → `siting.pipeline.optical` → `siting.pipeline.build` ดู README และ DESIGN (ข้อมูลใน `data/` และ `raw/` ไม่อยู่ใน git)
 
 สร้าง `openapi.json` ใหม่หลังเปลี่ยน endpoint:
 ```bash
-curl -s localhost:8780/openapi.json | python3 -m json.tool > docs/openapi.json
+make openapi        # = uv run siting-openapi
 ```
 
 ## 6. Attribution

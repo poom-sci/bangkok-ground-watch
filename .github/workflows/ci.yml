@@ -1,0 +1,36 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-extras --all-groups     # fails if uv.lock is out of date
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run ty check
+      - run: uv run siting-openapi --check                  # the API contract in git matches the code
+      - run: uv run pytest --cov                            # fails under 85% coverage
+  docker:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t solsat-siting .
+      - name: smoke test the image (no data baked in, so only liveness is expected)
+        run: |
+          docker run -d --name api -p 8080:8080 solsat-siting
+          for i in $(seq 1 20); do curl -fs localhost:8080/healthz && break; sleep 1; done
+          curl -fs localhost:8080/healthz
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/readyz)" = 503   # ready only with data

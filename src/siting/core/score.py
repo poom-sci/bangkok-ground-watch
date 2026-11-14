@@ -3,25 +3,26 @@
 Used by both the build pipeline and the API so the numbers shown as evidence
 are the same numbers that produced the score.
 """
+
 from __future__ import annotations
 
 import numpy as np
 from scipy.ndimage import median_filter, uniform_filter
 
-WATER_DB = -15.0           # VV below this counts as water (method 0.2.0, AOIs without VH)
-WATER_VH_DB = -18.0        # VH below this counts as water (method 0.3.0), see calibrate.py
-WET_MONTHS = (8, 11)       # Aug..Nov
-DRY_MAX_MONTH = 3          # Feb..Mar scenes are used for permanent water
+WATER_DB = -15.0  # VV below this counts as water (method 0.2.0, AOIs without VH)
+WATER_VH_DB = -18.0  # VH below this counts as water (method 0.3.0), see calibrate.py
+WET_MONTHS = (8, 11)  # Aug..Nov
+DRY_MAX_MONTH = 3  # Feb..Mar scenes are used for permanent water
 PERM_WATER_SHARE = 0.5
 W_FLOOD, W_ELEV = 0.7, 0.3
-FREQ_CAP = 0.3             # freq at/above this gives flood subscore 0
+FREQ_CAP = 0.3  # freq at/above this gives flood subscore 0
 ELIGIBLE_LC = (30, 40, 50)  # grassland, cropland, built-up: used to learn P(flood | elevation)
 EXCLUDED_LC = {10: "tree_cover", 80: "water_body", 90: "wetland"}
 BIN_M = 0.5
 MIN_BIN_N = 200
-RECUR_MIN_SCENES = 2      # a year counts as flooded when >= this many wet scenes show water
-RECUR_CAP = 0.25           # flooded in >= 25% of observed years gives recurrence subscore 0
-FLOODED_FREQ = 0.1         # a pixel counts as "flooded" when wet-season freq exceeds this
+RECUR_MIN_SCENES = 2  # a year counts as flooded when >= this many wet scenes show water
+RECUR_CAP = 0.25  # flooded in >= 25% of observed years gives recurrence subscore 0
+FLOODED_FREQ = 0.1  # a pixel counts as "flooded" when wet-season freq exceeds this
 
 
 def season_masks(months: np.ndarray, wet_months=WET_MONTHS, dry_max_month=DRY_MAX_MONTH):
@@ -42,17 +43,19 @@ def water_stats(db: np.ndarray, months: np.ndarray, wet_months=WET_MONTHS, thres
     return fw.astype("float32"), perm
 
 
-def flood_year_share(db: np.ndarray, months: np.ndarray, years: np.ndarray, wet_months=WET_MONTHS,
-                     threshold=WATER_DB):
+def flood_year_share(
+    db: np.ndarray, months: np.ndarray, years: np.ndarray, wet_months=WET_MONTHS, threshold=WATER_DB
+):
     """Share of observed years in which a pixel showed water in >= RECUR_MIN_SCENES wet scenes.
     Unlike frequency over scenes, one severe flood year is not diluted by many dry scenes."""
     wet, _ = season_masks(months, wet_months)
     water = np.isfinite(db) & (db < threshold)
-    flooded, observed = 0, 0
+    flooded = np.zeros(db.shape[1:], dtype="float32")
+    observed = 0
     for y in np.unique(years[wet]):
         m = wet & (years == y)
         observed += 1
-        flooded = flooded + (water[m].sum(0) >= RECUR_MIN_SCENES)
+        flooded += water[m].sum(0) >= RECUR_MIN_SCENES
     return (flooded / max(observed, 1)).astype("float32")
 
 
@@ -81,7 +84,9 @@ def apply_flood_prob(elev, edges, p):
     return p[np.clip(idx - 1, 0, len(p) - 1)].astype("float32")
 
 
-def exclusion_mask(landcover: np.ndarray, perm: np.ndarray, protected: np.ndarray | None = None) -> np.ndarray:
+def exclusion_mask(
+    landcover: np.ndarray, perm: np.ndarray, protected: np.ndarray | None = None
+) -> np.ndarray:
     ex = perm.copy()
     if protected is not None:
         ex |= protected

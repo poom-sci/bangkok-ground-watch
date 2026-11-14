@@ -1,14 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from conftest import LAT0, LON0
 from siting.api.app import create_app
 from siting.core.grid import Grid
-from conftest import LAT0, LON0
 
 
 @pytest.fixture(scope="module")
 def client(data_dir):
-    return TestClient(create_app(data_dir))
+    with TestClient(create_app(data_dir)) as c:  # the context manager runs the lifespan (loads the data)
+        yield c
 
 
 def point(grid: Grid, row, col):
@@ -61,7 +62,7 @@ def test_evidence_matches_score_inputs(client, synth_grid):
     e = client.get(s["evidence_url"].replace("/v1/evidence", "/v1/evidence")).json()
     wet = [x for x in e["scenes"] if x["season"] == "wet"]
     freq = sum(x["is_water"] for x in wet) / len(wet)
-    assert freq == s["components"]["flood"]["value"]          # evidence is the same data as the score
+    assert freq == s["components"]["flood"]["value"]  # evidence is the same data as the score
     assert e["summary"]["scenes_total"] == len(e["scenes"]) == 24
     assert e["method"]["water_rule"] == "VV_dB < -15"
 
@@ -78,78 +79,191 @@ def test_chips_are_png(client, synth_grid):
     assert both.status_code == 422
 
 
-def test_scene_ids_follow_orbit_and_wet_months_are_per_aoi(tmp_path, synth_grid):
+def test_scene_ids_follow_orbit_and_wet_months_are_per_aoi(tmp_path, synth_grid, make_client):
     import numpy as np
+
     from siting.pipeline.build import build_aoi
+
     n = synth_grid.height
     months = np.array([10, 11, 12, 2, 3])
     dates = np.array(["2024-10-05", "2024-11-06", "2024-12-07", "2024-02-02", "2024-03-03"])
     orbits = np.array(["ascending/70", "descending/164", "ascending/70", "ascending/70", "ascending/70"])
     db = np.full((5, n, n), -8.0, "float32")
-    db[:3, :, :10] = -20.0                      # flooded in all Oct-Dec scenes
-    build_aoi(aoi_id="south", name="South", grid=synth_grid, db=db, months=months, dates=dates,
-              dem=np.full((n, n), 3.0, "float32"), landcover=np.full((n, n), 40, "uint8"),
-              out_dir=tmp_path, wet_months=(10, 12), orbits=orbits)
-    c = TestClient(create_app(tmp_path))
+    db[:3, :, :10] = -20.0  # flooded in all Oct-Dec scenes
+    build_aoi(
+        aoi_id="south",
+        name="South",
+        grid=synth_grid,
+        db=db,
+        months=months,
+        dates=dates,
+        dem=np.full((n, n), 3.0, "float32"),
+        landcover=np.full((n, n), 40, "uint8"),
+        out_dir=tmp_path,
+        wet_months=(10, 12),
+        orbits=orbits,
+    )
+    c = make_client(tmp_path)
     e = c.get("/v1/evidence", params=point(synth_grid, 30, 5)).json()
     assert e["method"]["wet_months"] == [10, 11, 12]
     assert [s["scene_id"] for s in e["scenes"]][:2] == ["s1rtc-asc70-2024-10-05", "s1rtc-desc164-2024-11-06"]
-    assert e["summary"] == {"scenes_total": 5, "scenes_wet": 3, "wet_scenes_with_water": 3, "wet_scenes_valid": 3}
+    assert e["summary"] == {
+        "scenes_total": 5,
+        "scenes_wet": 3,
+        "wet_scenes_with_water": 3,
+        "wet_scenes_valid": 3,
+    }
     assert c.get(e["scenes"][3]["chip_url"]).status_code == 200
 
 
-def test_vh_rule_is_used_when_aoi_has_vh(tmp_path, synth_grid):
+def test_vh_rule_is_used_when_aoi_has_vh(tmp_path, synth_grid, make_client):
     import numpy as np
+
     from siting.pipeline.build import build_aoi
+
     n = synth_grid.height
     months = np.array([8, 9, 10, 11, 2, 3])
     dates = np.array(["2024-08-05", "2024-09-06", "2024-10-07", "2024-11-08", "2024-02-02", "2024-03-03"])
-    vv = np.full((6, n, n), -8.0, "float32")         # VV says dry everywhere (too bright to be water)
+    vv = np.full((6, n, n), -8.0, "float32")  # VV says dry everywhere (too bright to be water)
     vh = np.full((6, n, n), -14.0, "float32")
-    vh[:4, :, :10] = -22.0                           # VH sees flooding on the left in every wet scene
-    build_aoi(aoi_id="vh", name="VH", grid=synth_grid, db=vv, vh=vh, months=months, dates=dates,
-              dem=np.full((n, n), 3.0, "float32"), landcover=np.full((n, n), 40, "uint8"), out_dir=tmp_path)
-    c = TestClient(create_app(tmp_path))
+    vh[:4, :, :10] = -22.0  # VH sees flooding on the left in every wet scene
+    build_aoi(
+        aoi_id="vh",
+        name="VH",
+        grid=synth_grid,
+        db=vv,
+        vh=vh,
+        months=months,
+        dates=dates,
+        dem=np.full((n, n), 3.0, "float32"),
+        landcover=np.full((n, n), 40, "uint8"),
+        out_dir=tmp_path,
+    )
+    c = make_client(tmp_path)
     e = c.get("/v1/evidence", params=point(synth_grid, 30, 5)).json()
     assert e["method"]["version"] == "0.3.0" and e["method"]["water_rule"] == "VH_dB < -18"
     assert e["summary"]["wet_scenes_with_water"] == 4 and e["scenes"][0]["vh_db"] == -22.0
-    assert c.get("/v1/suitability", params=point(synth_grid, 30, 5)).json()["components"]["flood"]["value"] == 1.0
-    assert c.get("/v1/suitability", params=point(synth_grid, 30, 30)).json()["components"]["flood"]["value"] == 0.0
+    assert (
+        c.get("/v1/suitability", params=point(synth_grid, 30, 5)).json()["components"]["flood"]["value"]
+        == 1.0
+    )
+    assert (
+        c.get("/v1/suitability", params=point(synth_grid, 30, 30)).json()["components"]["flood"]["value"]
+        == 0.0
+    )
     chip = c.get(e["scenes"][0]["chip_url"] + "&band=vh&overlay=water_mask")
     assert chip.status_code == 200 and chip.content[:4] == b"\x89PNG"
 
 
 def square(grid, r, c, half):
-    ring = [grid.rc_to_lonlat(r + dr, c + dc) for dr, dc in ((-half, -half), (-half, half), (half, half), (half, -half), (-half, -half))]
+    ring = [
+        grid.rc_to_lonlat(r + dr, c + dc)
+        for dr, dc in ((-half, -half), (-half, half), (half, half), (half, -half), (-half, -half))
+    ]
     return {"type": "Polygon", "coordinates": [[list(p) for p in ring]]}
 
 
 def test_area_endpoint_stats_and_limits(client, synth_grid):
-    g = square(synth_grid, 30, 40, 4)                       # dry high ground, about 9x9 pixels
+    g = square(synth_grid, 30, 40, 4)  # dry high ground, about 9x9 pixels
     r = client.post("/v1/suitability/area", json={"geometry": g}).json()
     assert r["pixels"] > 40 and r["score_mean"] >= 90 and r["share_excluded"] == 0 and r["flags"] == []
     low = client.post("/v1/suitability/area", json={"geometry": square(synth_grid, 30, 12, 2)}).json()
     assert low["share_poor"] == 1.0
     mixed = client.post("/v1/suitability/area", json={"geometry": square(synth_grid, 30, 52, 4)}).json()
-    assert 0 < mixed["share_excluded"] < 1                  # straddles the tree-cover edge
+    assert 0 < mixed["share_excluded"] < 1  # straddles the tree-cover edge
     tiny = client.post("/v1/suitability/area", json={"geometry": square(synth_grid, 30, 40, 0.01)}).json()
     assert tiny["flags"] == ["smaller_than_pixel"] and tiny["pixels"] == 1 and tiny["score_mean"] >= 90
     assert client.post("/v1/suitability/area", json={"nope": 1}).status_code == 422
-    assert client.post("/v1/suitability/area", json={"geometry": {"type": "Point", "coordinates": [0, 0]}}).status_code == 422
-    big = {"type": "Polygon", "coordinates": [[[100.5, 14.2], [100.9, 14.2], [100.9, 14.5], [100.5, 14.5], [100.5, 14.2]]]}
+    assert (
+        client.post(
+            "/v1/suitability/area", json={"geometry": {"type": "Point", "coordinates": [0, 0]}}
+        ).status_code
+        == 422
+    )
+    big = {
+        "type": "Polygon",
+        "coordinates": [[[100.5, 14.2], [100.9, 14.2], [100.9, 14.5], [100.5, 14.5], [100.5, 14.2]]],
+    }
     assert client.post("/v1/suitability/area", json={"geometry": big}).status_code in (404, 422)
 
 
-def test_protected_area_excludes(tmp_path, synth_grid):
+def test_protected_area_excludes(tmp_path, synth_grid, make_client):
     import numpy as np
+
     from siting.pipeline.build import build_aoi
+
     n = synth_grid.height
-    months = np.array([8, 9, 2, 3]); dates = np.array(["2024-08-05", "2024-09-06", "2024-02-02", "2024-03-03"])
+    months = np.array([8, 9, 2, 3])
+    dates = np.array(["2024-08-05", "2024-09-06", "2024-02-02", "2024-03-03"])
     prot = square(synth_grid, 30, 30, 5)
-    build_aoi(aoi_id="p", name="P", grid=synth_grid, db=np.full((4, n, n), -8.0, "float32"), months=months, dates=dates,
-              dem=np.full((n, n), 3.0, "float32"), landcover=np.full((n, n), 40, "uint8"), out_dir=tmp_path,
-              protected_geojson=[prot])
-    c = TestClient(create_app(tmp_path))
+    build_aoi(
+        aoi_id="p",
+        name="P",
+        grid=synth_grid,
+        db=np.full((4, n, n), -8.0, "float32"),
+        months=months,
+        dates=dates,
+        dem=np.full((n, n), 3.0, "float32"),
+        landcover=np.full((n, n), 40, "uint8"),
+        out_dir=tmp_path,
+        protected_geojson=[prot],
+    )
+    c = make_client(tmp_path)
     inside = c.get("/v1/suitability", params=point(synth_grid, 30, 30)).json()
     outside = c.get("/v1/suitability", params=point(synth_grid, 5, 5)).json()
-    assert inside["score"] is None and "protected_area" in inside["exclusions"] and outside["score"] is not None
+    assert (
+        inside["score"] is None and "protected_area" in inside["exclusions"] and outside["score"] is not None
+    )
+
+
+def test_readyz_and_healthz(client, tmp_path, make_client):
+    assert client.get("/readyz").status_code == 200
+    empty = make_client(tmp_path)  # no AOI loaded
+    assert empty.get("/healthz").json() == {"ok": True, "aois": []}
+    assert empty.get("/readyz").status_code == 503
+
+
+def test_cors_is_off_by_default_and_on_when_configured(data_dir):
+    from siting.config import Settings
+
+    origin = {"Origin": "https://app.example.com"}
+    with TestClient(create_app(data_dir, Settings())) as off:
+        assert "access-control-allow-origin" not in off.get("/healthz", headers=origin).headers
+    on = Settings(cors_origins="https://app.example.com, https://b.example.com")
+    assert on.cors_origins == ["https://app.example.com", "https://b.example.com"]
+    with TestClient(create_app(data_dir, on)) as c:
+        allowed = c.get("/healthz", headers=origin).headers["access-control-allow-origin"]
+        assert allowed == "https://app.example.com"
+        other = c.get("/healthz", headers={"Origin": "https://evil.example"}).headers
+        assert "access-control-allow-origin" not in other
+
+
+def test_settings_read_environment(monkeypatch):
+    from siting.config import Settings
+
+    monkeypatch.setenv("SITING_DATA", "/somewhere")
+    monkeypatch.setenv("SITING_CORS_ORIGINS", "https://a.example")
+    s = Settings(_env_file=None)
+    assert str(s.data_dir) == "/somewhere" and s.cors_origins == ["https://a.example"]
+
+
+def test_openapi_file_is_up_to_date():
+    """docs/openapi.json is the contract; regenerate with `uv run siting-openapi` after changing endpoints."""
+    import json
+    from pathlib import Path
+
+    from siting.api.openapi import schema
+
+    on_disk = json.loads((Path(__file__).parent.parent / "docs" / "openapi.json").read_text())
+    assert on_disk == schema()
+
+
+def test_invalid_area_bodies_are_rejected(client):
+    bad = (
+        {},
+        {"geometry": {"type": "Point", "coordinates": [100.6, 14.2]}},
+        {"geometry": {"type": "Polygon", "coordinates": []}},
+        {"geometry": {"type": "Polygon", "coordinates": ["x"]}},
+    )
+    for body in bad:
+        assert client.post("/v1/suitability/area", json=body).status_code == 422, body

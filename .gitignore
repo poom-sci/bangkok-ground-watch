@@ -1,9 +1,16 @@
 __pycache__/
 *.pyc
 .venv/
+.venv-*/
 .DS_Store
-data/
+*.egg-info/
+.coverage
+.pytest_cache/
+.ruff_cache/
+# data: built by the pipeline, never committed (the folder itself is kept for the Docker build)
+data/*
+!data/.gitkeep
+raw/
 *.npz
 *.npy
-raw/
-*.egg-info/
+.env

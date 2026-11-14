@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.5
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.8
+    hooks:
+      - id: uv-lock          # keeps uv.lock in sync with pyproject.toml
+  - repo: local
+    hooks:
+      - id: openapi-up-to-date
+        name: docs/openapi.json is up to date
+        entry: uv run siting-openapi --check
+        language: system
+        pass_filenames: false
+        files: ^(src/siting/api/|docs/openapi.json)
