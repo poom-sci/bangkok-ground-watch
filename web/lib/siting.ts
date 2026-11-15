@@ -109,13 +109,15 @@ export function useSite(active: boolean) {
   const [res, setRes] = useState<Res>({ s: 'idle' });
   const [ev, setEv] = useState<EvState>({ s: 'idle' });
   const ctl = useRef<AbortController | null>(null);
+  const [tries, setTries] = useState(0);
 
   useEffect(() => {
     if (!active || !sitingEnabled || areas) return;
     const c = new AbortController();
     fetchCoverage(c.signal).then(setAreas, () => { if (!c.signal.aborted) setAreasError(true); });
     return () => c.abort();
-  }, [active, areas]);
+  }, [active, areas, tries]);
+  const retryAreas = useCallback(() => { setAreasError(false); setTries((n) => n + 1); }, []);
 
   const check = useCallback((p: Pin) => {
     ctl.current?.abort();
@@ -136,7 +138,7 @@ export function useSite(active: boolean) {
 
   const clear = useCallback(() => { ctl.current?.abort(); setPin(null); setRes({ s: 'idle' }); setEv({ s: 'idle' }); }, []);
   useEffect(() => () => ctl.current?.abort(), []);
-  return { areas, areasError, pin, res, ev, check, clear };
+  return { areas, areasError, retryAreas, pin, res, ev, check, clear };
 }
 
 export const inBox = (b: BBox, lat: number, lng: number) => lng >= b[0] && lng <= b[2] && lat >= b[1] && lat <= b[3];

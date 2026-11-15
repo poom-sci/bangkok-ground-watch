@@ -1,5 +1,6 @@
 'use client';
 
+import { LogoTile } from './Brand';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 const TOTAL = 7;
@@ -8,13 +9,13 @@ const TEAM = (process.env.NEXT_PUBLIC_TEAM_NAME ?? '').trim();
 const REPO = (process.env.NEXT_PUBLIC_REPO_URL ?? '').trim();
 
 const IMG = {
-  '1': { src: '/slides/slide-1.webp', w: 2880, h: 1800, alt: 'The Bangkok Ground Watch app showing a radar line-of-sight change layer over Bangkok, with the Processed NISAR values badge.' },
-  '2': { src: '/slides/slide-2.webp', w: 2880, h: 1800, alt: 'The app in Districts map view, with the 50 Bangkok districts coloured by screening index and the districts panel open.' },
-  '3a': { src: '/slides/slide-3a.webp', w: 2080, h: 1800, alt: 'The map area of the app with the radar layer, its colour legend and the date scrubber.' },
-  '3b': { src: '/slides/slide-3b.webp', w: 832, h: 1616, alt: 'A district panel for Lat Krabang with its total change on two tracks and a chart of mean change per radar pair.' },
-  '4': { src: '/slides/slide-4.webp', w: 2880, h: 1800, alt: 'The app showing the surface water layer for 12 November 2026, with its legend.' },
-  '5a': { src: '/slides/slide-5a.webp', w: 2080, h: 1800, alt: 'Site check result near Rojana industrial park: score 26, grade Poor, with a pin on the map.' },
-  '5b': { src: '/slides/slide-5b.webp', w: 912, h: 1616, alt: 'Evidence view with a year strip of radar scenes and a selected scene where water was seen.' },
+  '1': { src: '/slides/slide-1.webp', w: 2880, h: 1800, alt: 'Site Scout showing a score of 22 for a paddy point in Lat Krabang, with the NISAR ground view beside it, on a dark map of Bangkok.' },
+  '2': { src: '/slides/slide-2.webp', w: 2880, h: 1800, alt: 'Ground Pulse in Districts map view, with the 50 Bangkok districts coloured by screening index and the districts panel open.' },
+  '3a': { src: '/slides/slide-3a.webp', w: 2080, h: 1800, alt: 'Site Scout result near Rojana industrial park: score 26, grade Poor, with a pin on the map.' },
+  '3b': { src: '/slides/slide-3b.webp', w: 912, h: 1616, alt: 'Radar Evidence view with a year strip of radar scenes and a selected scene where water was seen.' },
+  '4a': { src: '/slides/slide-4a.webp', w: 2080, h: 1800, alt: 'The Ground Pulse map area with the radar layer, its colour legend and the date scrubber.' },
+  '4b': { src: '/slides/slide-4b.webp', w: 832, h: 1616, alt: 'A District Profile for Lat Krabang with its total change on two tracks and a chart of mean change per radar pair.' },
+  '5': { src: '/slides/slide-5.webp', w: 2880, h: 1800, alt: 'Ground Pulse showing the surface water layer for 12 November 2026, with its legend.' },
   '6': { src: '/slides/slide-6.webp', w: 2880, h: 1800, alt: 'The About the data dialog listing the limits of the data.' },
 } as const;
 type ImgKey = keyof typeof IMG;
@@ -23,7 +24,10 @@ function Shot({ k, style }: { k: ImgKey; style?: React.CSSProperties }) {
   const i = IMG[k];
   return (
     <figure className="s-frame" style={style}>
-      <img src={i.src} width={i.w} height={i.h} alt={i.alt} loading="eager" decoding="async" />
+      <picture>
+        <source media="print" srcSet={i.src.replace('.webp', '-p.jpg')} type="image/jpeg" />
+        <img src={i.src} width={i.w} height={i.h} alt={i.alt} loading="eager" decoding="async" />
+      </picture>
     </figure>
   );
 }
@@ -91,19 +95,20 @@ export default function Slides() {
       <div className="dl-wrap"><a className="btn" href="/slides/bangkok-ground-watch.pdf" download>Download PDF</a></div>
 
       <main className="stage">
-        <Slide {...s(1)} link>
+        <Slide {...s(1)} link className="s1">
           <div className="s-text">
+            <p className="s1-brand"><LogoTile size={64} /><span className="brand-name">SOLSAT</span></p>
             <h1 className="s-title t1">Bangkok Ground Watch</h1>
-            <p className="s-remember">NISAR radar, made readable.</p>
+            <p className="s-remember">Site flooding history and NISAR ground change, on one map.</p>
             <div className="s-body">
-              <p>Satellite radar shows how Bangkok&apos;s ground changes and where floodwater has been.</p>
+                            <p>Sentinel-1 (ESA, C-band radar): nine years of flood history at any covered point.</p>
+              <p>NISAR (NASA and ISRO, L-band radar): how the ground changes and where surface water sits, across 50 districts.</p>
               <p>NASA Space Apps Challenge 2026 · Dancing with the SARs</p>
               {TEAM && <p>Team: {TEAM}</p>}
             </div>
           </div>
           <div className="s-visual"><Shot k="1" /></div>
         </Slide>
-
         <Slide {...s(2)}>
           <div className="s-text">
             <h2 className="s-title">Why Bangkok needs this</h2>
@@ -116,36 +121,9 @@ export default function Slides() {
           </div>
           <div className="s-visual"><Shot k="2" /></div>
         </Slide>
-
-        <Slide {...s(3)}>
+        <Slide {...s(3)} className="dense">
           <div className="s-text">
-            <h2 className="s-title">Ground Watch, from NISAR</h2>
-            <p className="s-remember">17 NISAR radar pairs show how Bangkok&apos;s ground changed.</p>
-            <div className="s-nums three">
-              <div><span className="num mono">17</span><span className="lab">radar pairs, 21 Jun to 31 Oct 2026, two tracks</span></div>
-              <div><span className="num mono">19</span><span className="lab">water scenes, Jul to Nov 2026</span></div>
-              <div><span className="num mono">50</span><span className="lab">districts, grid about 80 m</span></div>
-            </div>
-          </div>
-          <div className="s-visual two"><Shot k="3a" style={{ flex: '58 1 0' }} /><Shot k="3b" style={{ flex: '42 1 0' }} /></div>
-        </Slide>
-
-        <Slide {...s(4)}>
-          <div className="s-text">
-            <h2 className="s-title">NISAR data, read without downloading</h2>
-            <p className="s-remember">Each file is 2 to 6 GB. We read only Bangkok.</p>
-            <ul className="s-body">
-              <li>HTTP range requests fetch just the Bangkok window of each file.</li>
-              <li>Water uses a fixed -19 dB threshold on HV backscatter.</li>
-              <li>Otsu&apos;s method over-marked paddies, so we dropped it.</li>
-            </ul>
-          </div>
-          <div className="s-visual"><Shot k="4" /></div>
-        </Slide>
-
-        <Slide {...s(5)} className="dense">
-          <div className="s-text">
-            <h2 className="s-title">Site check: nine years of radar</h2>
+            <h2 className="s-title">Site Scout: nine years of radar</h2>
             <p className="s-remember">Tap a point, get a screening score, and see the radar passes behind it.</p>
             <p className="s-sub">9 years of Sentinel-1 (2017 to 2025) · about 150 scenes per area · 3 areas live: Bangkok, Ayutthaya, Samut Sakhon</p>
             <div className="s-rows">
@@ -155,9 +133,32 @@ export default function Slides() {
             </div>
             <p className="s-sub">Grades are provisional.</p>
           </div>
-          <div className="s-visual two"><Shot k="5a" style={{ flex: '58 1 0' }} /><Shot k="5b" style={{ flex: '42 1 0' }} /></div>
+          <div className="s-visual two"><Shot k="3a" style={{ flex: '58 1 0' }} /><Shot k="3b" style={{ flex: '42 1 0' }} /></div>
         </Slide>
-
+        <Slide {...s(4)}>
+          <div className="s-text">
+            <h2 className="s-title">Ground Pulse, from NISAR</h2>
+            <p className="s-remember">17 NISAR radar pairs show how Bangkok&apos;s ground changed.</p>
+            <div className="s-nums three">
+              <div><span className="num mono">17</span><span className="lab">radar pairs, 21 Jun to 31 Oct 2026, two tracks</span></div>
+              <div><span className="num mono">19</span><span className="lab">water scenes, Jul to Nov 2026</span></div>
+              <div><span className="num mono">50</span><span className="lab">districts, grid about 80 m</span></div>
+            </div>
+          </div>
+          <div className="s-visual two"><Shot k="4a" style={{ flex: '58 1 0' }} /><Shot k="4b" style={{ flex: '42 1 0' }} /></div>
+        </Slide>
+        <Slide {...s(5)}>
+          <div className="s-text">
+            <h2 className="s-title">NISAR data, read without downloading</h2>
+            <p className="s-remember">Each file is 2 to 6 GB. We read only Bangkok.</p>
+            <ul className="s-body">
+              <li>HTTP range requests fetch just the Bangkok window of each file.</li>
+              <li>Water uses a fixed -19 dB threshold on HV backscatter.</li>
+              <li>Otsu&apos;s method over-marked paddies, so we dropped it.</li>
+            </ul>
+          </div>
+          <div className="s-visual"><Shot k="5" /></div>
+        </Slide>
         <Slide {...s(6)}>
           <div className="s-text">
             <h2 className="s-title">What it does not claim</h2>
@@ -170,7 +171,6 @@ export default function Slides() {
           </div>
           <div className="s-visual"><Shot k="6" /></div>
         </Slide>
-
         <Slide {...s(7)} className="s7" link>
           <div className="s7-head">
             <h2 className="s-title">Data, credits and AI use</h2>
@@ -182,7 +182,7 @@ export default function Slides() {
             <div className="s7-card"><h3>Other</h3><p>OpenStreetMap contributors · <span className="mono">MapLibre GL JS</span> · <span className="mono">Next.js</span></p></div>
           </div>
           <div className="s7-ai"><p>We used Claude (Anthropic), through Claude Code, to write code, design the interface and draft text. The team chose the challenge, the data and the method, and checked results against real NISAR and Sentinel-1 data. No AI-generated images, video or audio.</p></div>
-          <p className="s7-foot">Live app: <a href="/app/">{APP_URL}</a>{REPO && <> · Code: <a href={REPO}>{REPO}</a></>} · Not affiliated with or endorsed by NASA.</p>
+          <p className="s7-foot"><LogoTile size={40} /> Live app: <a href="/app/">{APP_URL}</a>{REPO && <> · Code: <a href={REPO}>{REPO}</a></>} · Not affiliated with or endorsed by NASA.</p>
         </Slide>
       </main>
 

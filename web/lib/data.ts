@@ -215,6 +215,17 @@ const inRing = (r: Ring, x: number, y: number) => {
   return inside;
 };
 
+export function districtAtPoint(geo: FeatureCollection | null, lat: number, lng: number): string | null {
+  for (const f of geo?.features ?? []) {
+    const g = f.geometry;
+    const polys: Ring[][] = g.type === 'Polygon' ? [g.coordinates as Ring[]] : g.type === 'MultiPolygon' ? (g.coordinates as Ring[][]) : [];
+    for (const p of polys) {
+      if (p[0] && inRing(p[0], lng, lat) && !p.slice(1).some((h) => inRing(h, lng, lat))) return codeOf(f.properties);
+    }
+  }
+  return null;
+}
+
 export function featureCentre(geo: FeatureCollection | null, code: string): { lat: number; lng: number } | null {
   const f = geo?.features.find((x) => codeOf(x.properties) === code);
   if (!f) return null;

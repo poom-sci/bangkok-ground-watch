@@ -79,6 +79,7 @@ export default function MapView(p: Props) {
   const pinMarker = useRef<maplibregl.Marker | null>(null);
   const areaKey = useRef('');
   const lastFly = useRef(0);
+  const selPaint = useRef('');
   const sel = useRef<string | null>(null);
   const latest = useRef(p);
   latest.current = p;
@@ -98,8 +99,8 @@ export default function MapView(p: Props) {
     if (!map || !ready.current || !f || f.key === lastFly.current) return;
     lastFly.current = f.key;
     const duration = reduceMotion() ? 0 : 600;
-    if (f.center) map.flyTo({ center: f.center, zoom: f.zoom ?? 13, duration });
-    else if (f.bbox) map.fitBounds([[f.bbox[0], f.bbox[1]], [f.bbox[2], f.bbox[3]]], { padding: 48, duration });
+    if (f.center) map.flyTo({ center: f.center, zoom: f.zoom ?? 13, duration, padding: latest.current.padding });
+    else if (f.bbox) map.fitBounds([[f.bbox[0], f.bbox[1]], [f.bbox[2], f.bbox[3]]], { padding: latest.current.padding, duration });
   };
 
   const sync = () => {
@@ -125,6 +126,7 @@ export default function MapView(p: Props) {
     const site = cur.site;
     const dv = site ? 'none' : 'visible';
     map.setLayoutProperty('dist-line', 'visibility', dv);
+    map.setLayoutProperty('dist-casing', 'visibility', dv);
     map.setLayoutProperty('dist-hit', 'visibility', dv);
     const av = site ? 'visible' : 'none';
     map.setLayoutProperty('area-fill', 'visibility', av);
@@ -157,6 +159,11 @@ export default function MapView(p: Props) {
     } else if (pinMarker.current) { pinMarker.current.remove(); pinMarker.current = null; }
     if (site) site.centerRef.current = () => { const c = map.getCenter(); return { lat: c.lat, lng: c.lng }; };
     const vis = radar ? 'none' : 'visible';
+    const selColor = radar ? token('--map-sel') : token('--text');
+    if (selColor !== selPaint.current && map.getLayer('dist-line')) {
+      selPaint.current = selColor;
+      map.setPaintProperty('dist-line', 'line-color', ['case', ['boolean', ['feature-state', 'sel'], false], selColor, ['boolean', ['feature-state', 'hover'], false], token('--map-line'), token('--outline')]);
+    }
     map.setLayoutProperty('dist-fill', 'visibility', vis);
     map.setLayoutProperty('dist-hatch', 'visibility', vis);
     if (sel.current !== cur.selected) {
@@ -177,7 +184,7 @@ export default function MapView(p: Props) {
         sources: { base: { type: 'raster', tileSize: 256, maxzoom: 19,
           attribution: '© OpenStreetMap contributors',
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'] } },
-        layers: [{ id: 'base', type: 'raster', source: 'base', paint: { 'raster-saturation': -0.85, 'raster-brightness-min': 0.3, 'raster-contrast': -0.2 } }],
+        layers: [{ id: 'base', type: 'raster', source: 'base', paint: { 'raster-saturation': -1, 'raster-brightness-min': 0.72, 'raster-brightness-max': 0.04, 'raster-contrast': 0.1 } }],
       },
       center: [100.5, 13.75], zoom: 9,
       attributionControl: { compact: false },
@@ -197,7 +204,6 @@ export default function MapView(p: Props) {
       }
     });
     map.once('style.load', () => {
-      const accent = token('--accent');
       const ramp = ['--ramp-1', '--ramp-2', '--ramp-3', '--ramp-4', '--ramp-5'].map(token);
       const img = hatchImage(token('--hatch'), token('--surface'));
       if (img) map.addImage('hatch', img);
@@ -216,12 +222,15 @@ export default function MapView(p: Props) {
       map.addLayer({ id: 'dist-hatch', type: 'fill', source: 'dist', filter: ['<', ['get', 'idx'], 0], layout: { visibility: 'none' },
         paint: { 'fill-pattern': 'hatch' } });
       map.addSource('areas', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas', layout: { visibility: 'none' }, paint: { 'fill-color': accent, 'fill-opacity': Number(token('--area-fill-a')) || 0.1 } });
-      map.addLayer({ id: 'area-line', type: 'line', source: 'areas', layout: { visibility: 'none' }, paint: { 'line-color': accent, 'line-width': parseFloat(token('--area-line')) || 2 } });
+      map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas', layout: { visibility: 'none' }, paint: { 'fill-color': token('--map-area-fill'), 'fill-opacity': 0 } });
+      map.addLayer({ id: 'area-line', type: 'line', source: 'areas', layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': parseFloat(token('--area-line')) || 1.5, 'line-opacity': 0.8 } });
       map.on('click', (e) => { const s = latest.current.site; if (s) s.onPick(e.lngLat.lat, e.lngLat.lng); });
       map.addLayer({ id: 'dist-hit', type: 'fill', source: 'dist', paint: { 'fill-color': 'rgba(0,0,0,0)' } });
+      map.addLayer({ id: 'dist-casing', type: 'line', source: 'dist', paint: {
+        'line-color': token('--map-casing'), 'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 6, 0],
+      } });
       map.addLayer({ id: 'dist-line', type: 'line', source: 'dist', paint: {
-        'line-color': ['case', ['boolean', ['feature-state', 'sel'], false], accent, ['boolean', ['feature-state', 'hover'], false], accent, token('--outline')],
+        'line-color': ['case', ['boolean', ['feature-state', 'sel'], false], token('--map-sel'), ['boolean', ['feature-state', 'hover'], false], token('--map-line'), token('--outline')],
         'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 3, ['boolean', ['feature-state', 'hover'], false], 2, 1],
       } });
       map.on('click', 'dist-hit', (e) => {
@@ -250,7 +259,7 @@ export default function MapView(p: Props) {
       }
       sync();
     });
-    return () => { areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; added.current.clear(); failed.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
+    return () => { areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; selPaint.current = ''; added.current.clear(); failed.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

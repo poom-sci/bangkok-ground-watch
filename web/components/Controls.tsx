@@ -48,7 +48,7 @@ export function DisplayControls({ tracks, available, track, onTrack, opacity, on
 export function DisplayToggle({ open, onToggle, controls }: { open: boolean; onToggle: () => void; controls: string }) {
   const t = useT();
   return (
-    <button type="button" className="btn row-btn" aria-expanded={open} aria-controls={controls} onClick={onToggle}>
+    <button type="button" className="btn row-btn" data-display-toggle aria-expanded={open} aria-controls={controls} onClick={onToggle}>
       <span>{t('display')}</span><Chevron open={open} />
     </button>
   );

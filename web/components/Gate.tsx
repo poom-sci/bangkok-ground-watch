@@ -75,8 +75,8 @@ export default function Gate({ step, lang, onLang, profile, hello, siteEnabled, 
   };
   const last = profile.mode && (profile.mode === 'ground' || siteEnabled) ? profile.mode : null;
   const cards: { id: ModeId; icon: React.ReactNode; title: string; line: string }[] = [
-    { id: 'ground', icon: <RadarIcon />, title: t('mode.ground'), line: groundLine },
     ...(siteEnabled ? [{ id: 'site' as ModeId, icon: <SiteIcon />, title: t('mode.site'), line: siteLine }] : []),
+    { id: 'ground', icon: <RadarIcon />, title: t('mode.ground'), line: groundLine },
   ];
   const first = cards.find((c) => c.id === last) ?? cards[0];
   const heading = step === 'A' ? t('title') : signedIn ? t(hello ? 'hello' : 'welcome', { name: profile.name }) : t('start.guest');

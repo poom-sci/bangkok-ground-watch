@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Chevron, useT } from './ui';
 import { HonestLine } from './Gate';
+import { SolsatMark } from './Brand';
 import { clip, type Profile } from '@/lib/user';
 
 const PersonIcon = () => (
@@ -48,6 +49,7 @@ export default function UserMenu({ profile, canMySites, onMySites, onSwitch, onS
           <a className="menu-item" href="/">{t('user.home')}</a>
           <button type="button" className="menu-item menu-about" onClick={pick(onAbout)}>{t('about.open')}</button>
           <HonestLine />
+          <p className="menu-brand"><SolsatMark size={28} /></p>
         </div>
       )}
     </div>

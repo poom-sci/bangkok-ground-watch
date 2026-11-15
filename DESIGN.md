@@ -605,3 +605,218 @@ Slide 3 and 5 place the two crops side by side in one frame, 58 / 42 split, 24px
 - Slide 1 "Team: {team name}" renders only when `NEXT_PUBLIC_TEAM_NAME` is set; slide 7 "Code: {repo}" renders only when `NEXT_PUBLIC_REPO_URL` is set. No placeholder text may ever ship.
 - Slide 6, first bullet, last sentence becomes: "Its sign is not confirmed, so we report change, not direction."
 - Bangkok is live in the Site check API, so "3 areas live: Bangkok, Ayutthaya, Samut Sakhon" is true; still read the area names from `/v1/coverage` at build of the screenshots and fix the line if they differ.
+
+## 12. SOLSAT theme (supersedes the colour, shadow and font values in section 3 and 4)
+
+Source: THEME.md (extracted from solsat-frontend @ 21024711). The team's product family is SOLSAT: white and near-black, one orange, flat surfaces with hairlines, 4px corners, Poppins + Prompt. Layout, components, copy and behaviour stay as built. One light theme (SOLSAT has a dark theme, we do not ship it).
+
+**Tokens: replace `web/app/tokens.css` `:root` colour, shadow, radius, font and motion lines with these (every existing variable keeps its name; lines not shown stay as they are).**
+```css
+:root {
+  --bg: #FFFFFF;  --surface: #F7F7F8;  --surface-glass: rgba(247,247,248,.94);
+  --text: #0B0B0C;  --muted: #5F6062;  --edge: #5F6062;      /* edge = SOLSAT control border */
+  --accent: #B93A0A;  --accent-ink: #FFFFFF;                  /* SOLSAT tertiary, the AA-safe orange */
+  --focus: #0B0B0C;                                           /* SOLSAT focus ring, 3px outline stays */
+  --ok-bg: #E2EBD6;  --ok-ink: #1B6B36;
+  --demo-bg: #FFE9DF;  --demo-ink: #A8360A;
+  --bad-bg: #F9D6D9;  --bad-ink: #BE1E2D;
+  --sh-dark: #D0D0D2;  --sh-light: #FFFFFF;                   /* now: hairline grey, white ring */
+  --raised: 0 0 0 1px var(--sh-dark), 0 18px 40px -22px rgba(11,11,12,.35);  /* cards, floating panels */
+  --raised-sm: 0 0 0 1px var(--sh-dark);                      /* rows, chips, controls */
+  --inset: inset 0 0 0 1px var(--edge);                       /* pressed, inputs, selected row */
+  --r-ctl: 4px;  --r-card: 8px;  --r-pill: 4px;               /* SOLSAT r-md, r-lg, r-pill */
+  --font: var(--font-poppins), var(--font-prompt), system-ui, sans-serif;
+  --mono: var(--font-chakra), var(--font-prompt), ui-monospace, monospace;
+  --lh: 1.65;  --ease: cubic-bezier(.16,1,.3,1);  --dur: 160ms;
+  --glass-border: #D0D0D2;  --glass-blur: 14px;  --scrim: rgba(11,11,12,.55);
+  --hatch: #8A8B8C;
+  --ramp-1: #FFE9DF; --ramp-2: #FFC2A8; --ramp-3: #FF7E4D; --ramp-4: #E04A12; --ramp-5: #B93A0A; /* Districts view only */
+  /* new */
+  --brand: #FF5A1F;  --brand-ink: #0B0B0C;                    /* SOLSAT orange: primary buttons, selected segment, map selection */
+  --link: #285A80;                                            /* SOLSAT info blue: links, water marks and bars in charts */
+  --font-display: var(--font-zen-dots), var(--font-kanit), var(--font-chakra), sans-serif;
+  --orbit: #000000;                                           /* logo tile ground */
+  --gate-scrim: rgba(247,247,248,.72);
+  --map-line: #B93A0A;  --map-area-fill: rgba(255,90,31,.10);  --map-sel: #FF5A1F;  --map-casing: #FFFFFF;
+}
+```
+Unchanged: `--s1..s6`, `--t-*` sizes (15px body stays, Poppins is wider, check 296px cards for overflow), `--los-*`, `--water`, `--water-a`, `--outline`, `--ramp-opacity`, all dimension variables.
+
+**Fonts** (`web/app/layout.tsx`, replace the two Plex imports with `next/font/google`): `Poppins({subsets:['latin'],weight:['400','500','600'],variable:'--font-poppins'})`, `Prompt({subsets:['thai'],weight:['400','500','600'],variable:'--font-prompt'})`, `Chakra_Petch({subsets:['latin'],weight:['500','600'],variable:'--font-chakra'})`, `Zen_Dots({subsets:['latin'],weight:'400',variable:'--font-zen-dots'})`, `Kanit({subsets:['thai'],weight:['500','600'],variable:'--font-kanit'})`. Decision: SOLSAT's fonts. Thai is covered by Prompt (body) and Kanit (display) in every weight used; Latin by Poppins. A mixed EN/TH line switches face per script (both geometric, so the height matches), which is how SOLSAT itself renders. Numerals use Chakra Petch (not monospace), so all numeric elements need `font-variant-numeric: tabular-nums` (add to `body`); not verified that Chakra Petch has tabular figures, check the legend and the year strip once. Zen Dots (Latin only, weight 400 only, wide) is used for exactly three things: the wordmark, the landing h1, and the title on slide 1 (88px, three lines "Bangkok / Ground / Watch"). All other titles stay Poppins 600. Add `h1,h2,h3{font-synthesis-weight:none}` (SOLSAT rule) and give Zen Dots elements `font-weight:400`.
+
+**Contrast (computed with `design-system/contrast.py`)**
+| Pair | Ratio | Needs | Result |
+|---|---|---|---|
+| text on bg / on surface | 19.67 / 18.37 | 4.5 | pass |
+| muted on bg / on surface | 6.29 / 5.87 | 4.5 | pass |
+| muted on surface-glass over worst case (flattened on black, #E8E8E9) | 5.14 | 4.5 | pass |
+| text on glass worst case #E8E8E9 | 16.06 | 4.5 | pass |
+| accent-ink #FFFFFF on accent #B93A0A | 5.71 | 4.5 | pass |
+| accent on bg / on surface / on glass worst case | 5.71 / 5.34 / 4.67 | 4.5 | pass |
+| brand-ink #0B0B0C on brand #FF5A1F | 6.30 | 4.5 | pass |
+| link #285A80 on bg / on surface | 7.33 / 6.84 | 4.5 | pass |
+| ok-ink on ok-bg | 5.33 | 4.5 | pass |
+| demo-ink on demo-bg | 5.62 | 4.5 | pass |
+| bad-ink on bad-bg (lowest text pair) | 4.58 | 4.5 | pass |
+| bad-ink on surface (field error) | 5.74 | 4.5 | pass |
+| edge #5F6062 on bg / on surface (control borders) | 6.29 / 5.87 | 3.0 | pass |
+| focus #0B0B0C on bg / on brand | 19.67 / 6.30 | 3.0 | pass |
+| brand #FF5A1F on bg (graphics, selection casing) | 3.11 | 3.0 | pass |
+| brand #FF5A1F on surface | 2.91 | 3.0 | FAIL, so brand is never used on `--surface`; surfaces use `--accent` |
+| border #D0D0D2 on bg | 1.54 | n/a | decorative separator only; every control keeps the 6:1 `--edge` border |
+Fixed by decision: SOLSAT's #FF5A1F cannot be text or a graphic on cards, so `--accent` is its own safe tone #B93A0A and the bright orange is reserved for filled buttons with black ink and for map selection.
+
+**Elevation decision.** SOLSAT is flat (its tokens set card, tile and paper shadows to `none`, borders are hairlines, one soft shadow only for floating panels). So `--raised`, `--raised-sm` and `--inset` are redefined as above and no component CSS changes. What you lose: the soft extruded, pillow-like depth of neumorphism, and the shadow-only hover lift (hover now changes only from a ring to a ring plus shadow; keep the translateY(-1px) for feedback). What you gain: crisper edges, better contrast, and a look that matches solsat.ai. Selected and pressed states already carry a second cue (accent fill, check, left bar), so nothing becomes colour-only.
+
+**Edits that are not token swaps (the only component CSS changes)**
+- `globals.css:30` (`.round`), `:38` (`.seg-btn[aria-pressed]`), `:248` (`.btn.primary`): `background/border-color: var(--brand); color: var(--brand-ink)`.
+- `globals.css:245, 299, 378, 495, 497` use `--focus` as a link or water colour: change to `var(--link)` (otherwise links and water marks turn black).
+- `globals.css:352` hard-coded `rgba(232,236,241,.72)`: `var(--gate-scrim)`.
+- Wordmark, `.land h1` and slide 1 title: `font-family: var(--font-display); font-weight: 400`.
+- Slides CSS: same variables; the deck has no other hard-coded colours to change.
+
+**Migration table**
+| Old | New | Usages | Note |
+|---|---|---|---|
+| --bg #E8ECF1 | #FFFFFF | 46 | token swap |
+| --surface #EEF1F6 | #F7F7F8 | 46 | token swap |
+| --text #1B2230 / --muted #475066 | #0B0B0C / #5F6062 | 32 / 90 | token swap |
+| --edge #6F798B | #5F6062 | 74 | stronger, fine |
+| --accent #0B6E6E, --accent-ink #FFF | #B93A0A, #FFF | 48 / 6 | teal to orange |
+| --focus #0A4FBF | #0B0B0C | 24 | 5 uses need `--link` (above) |
+| --ok-/--demo-/--bad- pairs | SOLSAT success, warning, danger surfaces | 12 | token swap |
+| --sh-dark #C3C9D4, --sh-light #FFF | #D0D0D2, #FFF | 0 / 12 | now only rings |
+| --raised, --raised-sm, --inset | flat ring definitions | 28 / 26 / 18 | no CSS change |
+| --r-ctl 12, --r-card 20, --r-pill 999 | 4, 8, 4 | 36 / 36 / 32 | pills and chips become square-cornered; round buttons use 50% and stay round |
+| --font, --mono (IBM Plex) | Poppins+Prompt, Chakra Petch | 4 / 4 | plus layout.tsx imports |
+| --ramp-1..5 teal | orange ramp | 0 in CSS (read by map JS) | Districts view |
+| --glass-border rgba, --scrim, --glass-blur, --lh, --ease | #D0D0D2, ink 55%, 14px, 1.65, SOLSAT ease | 22 / 2 / 12 / 2 / 12 | token swap |
+
+**Must not change.** Layout, component structure, copy (EN and TH), the LOS overlay PNG colours and the legend gradient `--los-0..100` (they match `process_to_web.py`), the water overlay colour `--water` and `--water-a`, 44px targets, the 3px focus outline, and every AA rule. The brand orange never appears inside the LOS legend or overlay.
+
+**Map chrome (grey base map, red-blue LOS overlay).**
+- Coverage rectangles: 2px `--map-line` #B93A0A stroke, `--map-area-fill` fill. #B93A0A on the grey base is 4.67:1 or better.
+- District outlines: `--outline` white at 70%, 1px, unchanged; readable over the red-blue overlay and the grey base.
+- Selected district: 6px `--map-casing` white under 3px `--map-sel` #FF5A1F. The white casing keeps it separate from the salmon (#F49A7B) and red ends of the LOS ramp, where orange alone would blend.
+- Pin: `--accent` fill with the existing 3px white ring (5.71:1 against the ring); hollow pin unchanged.
+- Floating panels keep the 94% opaque `--surface-glass`, a 1px `#D0D0D2` border and `--raised`; no dark glass (SOLSAT's black lens panels are not used, because text contrast is computed against a light surface).
+
+**Brand use.** The logo is the team's own: copy `/Users/poom/Documents/work/solsat/solsat-code/solsat-frontend/public/solsat-logo.svg` to `web/public/solsat-logo.svg` (mark only, 1000x1000, white-to-black gradient). The white end vanishes on white, so it always sits on a black tile: `--orbit` background, `--r-ctl` radius, 8px inner padding (logo area = tile minus padding). Minimum tile size 28px, clear space of one quarter of the tile edge on every side (SOLSAT states no rule, this is our assumption). Always followed by the text "SOLSAT" in `--font-display` 14px, `--text`. Placements: landing top bar, right of the wordmark, "by" + tile 28px + SOLSAT (hidden under 375 wide, shown in the footer instead); landing footer, tile 40px + "Built by SOLSAT"; app: the user menu footer only; slide 1, tile 64px + SOLSAT above the title; slide 7, tile 40px in the footer line before "Live app". No logo in the app's map view.
+
+**Changes to earlier sections caused by the theme**
+- Section 10 landing: h1 in `--font-display` (44px, 32px phone), "by SOLSAT" in the top bar, footer line "Built by SOLSAT", hero screenshot and the 3 slide screenshots must be recaptured after the theme change.
+- Section 11 deck: slide 1 title 88px Zen Dots in three lines (replaces 120px); slide chrome uses `--accent` for the progress bar; screenshots recaptured; slide 1 and 7 get the logo tile.
+- Section 3 and 4 values for accent (teal), focus (blue), shadows and Plex are superseded by the block above.
+
+**Do not build (theme).** A dark theme or theme switcher, the flux gradient, glow shadows, dark glass panels, Zen Dots in body text, the 20 and 24px card radii, a second orange, the logo on white without its black tile, the logo recoloured or stretched, any SOLSAT claim beyond "Built by SOLSAT".
+
+## 13. Refocus, names and dark theme
+
+Lead feature = Thanut's site suitability engine. Second feature = NISAR view. Product name stays "Bangkok Ground Watch". Params `?mode=site` and `?mode=ground` are unchanged. This section overrides earlier names, ordering and colour values; everything else stays.
+
+### A. Names (feature names are brand names: Latin in both languages; utility labels are translated)
+| Old | New EN | New TH | Reason |
+|---|---|---|---|
+| Site check (mode, lead) | **Site Scout** | Site Scout | A planner "scouts" a site; reads as a feature, one word to remember |
+| Ground watch (mode) | **Ground Pulse** | Ground Pulse | Stops colliding with the product name; radar pulses, ground change over time |
+| See the evidence / evidence view | **Radar Evidence** (button "Open Radar Evidence") | Radar Evidence | Says what the proof is made of |
+| District detail | **District Profile** | โปรไฟล์เขต | Plain, one noun |
+| My sites / Save / Saved | **Shortlist** / "Add to shortlist" / "In shortlist" | รายการที่คัดไว้ / เพิ่มในรายการ / อยู่ในรายการ | Says why you save |
+| Check a site here | **Scout here** | สำรวจที่นี่ | Matches Site Scout |
+| Covered areas / Go to area | **Scouting areas** / Go to area | พื้นที่ที่สำรวจได้ / ไปยังพื้นที่ | Areas where Site Scout works |
+Descriptors (always shown under the name, keep "screening"): Site Scout: "Suitability screening for factory and rooftop solar sites" | "คัดกรองความเหมาะสมของที่ตั้งโรงงานและโซลาร์เซลล์บนหลังคา". Ground Pulse: "NISAR radar: ground change and surface water in 50 districts" | "เรดาร์ NISAR: การเปลี่ยนของพื้นดินและน้ำผิวดินใน 50 เขต".
+Other strings: every "Ground watch" becomes "Ground Pulse" and every "Site check" becomes "Site Scout" (mode switch, `start.*`, `land.*`, `cov.*`, `site.*`, `d.checkSite`, `my.*`, `user.*` menu, `save.gate`, deck titles). Mode switch order and all card orders: Site Scout first, Ground Pulse second. Changed strings: `my.empty` "Your shortlist is empty" | "รายการที่คัดไว้ยังว่าง"; `my.empty.sub` "Check a site, then tap Add to shortlist." | "ตรวจที่ตั้ง แล้วแตะ เพิ่มในรายการ"; `my.guest` "Add a name to keep a shortlist. Guests can still scout sites." | "เพิ่มชื่อเพื่อเก็บรายการที่คัดไว้ ผู้เยี่ยมชมยังสำรวจที่ตั้งได้"; `save.gate` "Add a name to keep a shortlist" | "เพิ่มชื่อเพื่อเก็บรายการที่คัดไว้".
+
+### B. Flow, lead feature first
+- 5-second message (app, first screen): "This point's flooding history, from nine years of radar." Primary action: Open Radar Evidence.
+```
+[Landing] --"Open Site Scout"--> [/app/?mode=site: Bangkok + example point] --Open Radar Evidence--> [Radar Evidence]
+    |  (card 2 "Open Ground Pulse")      | tap map = own point      | Back                        | Back
+    +--> [/app/?mode=ground]  <--"Open {district} in Ground Pulse"-- result card NISAR block
+[/app/ bare] -> [Gate: name or guest] -> [Start: Site Scout card first, preselected] -> mode.  Title tap = Start.
+```
+- Landing: hero promise "Check a site's flooding history from nine years of radar, with NISAR ground data beside it." | "ตรวจประวัติน้ำท่วมของที่ตั้งจากเรดาร์ 9 ปี พร้อมข้อมูลพื้นดินจาก NISAR ข้างกัน". Primary "Open Site Scout" (to `/app/?mode=site`, skips the gate as a deep link). Secondary "How it works". Hero screenshot: `/app/?mode=site` default state (example card, dark). Section 2: Site Scout card first and larger (7/12), Ground Pulse second (5/12), both with a source tag chip ("Sentinel-1" / "NISAR"). Coverage columns, how-it-works step order and the limits order follow.
+- Start step (section 9): two cards, Site Scout first and preselected (focus, "Last used" overrides if the user's last mode was Ground Pulse). Bare `/app/` default mode with no saved mode = Site Scout.
+- **First 10 seconds** (`/app/?mode=site`, no lat/lng): the map fits Bangkok, the example point Lat Krabang paddy (13.75, 100.83) is checked live through the API (never hardcoded numbers; if it fails, the "no point" state shows), pin dropped, result card open with an "Example" chip on the score, showing 22 Poor, "Water seen in 36 of 130 wet-season radar passes", the NISAR block for Lat Krabang. Under the chip: "Example point: Lat Krabang paddy. Tap anywhere in an outlined area to check your own site." Replace it by tapping the map (the chip and note disappear on the first user tap), "Use map centre" (keyboard), or a Shortlist row. `?lat=&lng=` deep links override the example. 
+
+```
+375 (dock + sheet)                    1440
++---------------------+     +---------------------------------------------------------+
+| Bangkok Ground Watch|     | [title chip + SOLSAT]  [Site Scout|Ground Pulse]  [EN|TH][i][user] |
+| [Site Scout|Ground P]|     | +-------------+                       +------------------+ |
+|        MAP + pin     |     | | Scouting     |        MAP + pin      | Suitability screening|
+|  (example, Bangkok)  |     | | areas list   |   coverage outlines   | 22  Poor  [Example]  |
++---------------------+     | | Shortlist    |                       | Water seen in 36 of  |
+| sheet 45vh: 22 Poor |     | +-------------+                       | 130 ... NISAR block  |
+| Example | flood line |     |                                       | [Open Radar Evidence]|
+| NISAR block | [Open] |     |                                       +------------------+ |
++---------------------+     +---------------------------------------------------------+
+```
+
+### C. NISAR stays core
+- **NISAR block** in the Site Scout result card, only when the point lies in a Bangkok district (point-in-polygon on the district file the app already loads); placed after "Things to know", before land cover. Eyebrow chip "NISAR", title "NISAR ground view · {district}". Rows (mono values): total LOS change per track, highest surface water, usable radar signal (low note from `d.lowUsable` when under 50%). Note line always: "NISAR values are shown next to the score. They are not part of it." Link (secondary, 44px): "Open {district} in Ground Pulse" to `?mode=ground&d=<dcode>`. A missing value shows "No data", an unprocessed one "Pending" (section 4 rules). Outside Bangkok: the block is not rendered. District Profile keeps "Scout here" (back link), so the pair is two-way.
+- One line per satellite (landing under the hero, deck slide 1): NISAR: "NISAR (NASA and ISRO, L-band radar): how the ground changes and where surface water sits, across 50 districts." Sentinel-1: "Sentinel-1 (ESA, C-band radar): nine years of flood history at any covered point." Together: "Together: what is changing now, and what has flooded before."
+New strings (EN | TH): `ex.chip` Example | ตัวอย่าง · `ex.note` Example point: Lat Krabang paddy. Tap anywhere in an outlined area to check your own site. | จุดตัวอย่าง: นาข้าวลาดกระบัง แตะที่ใดก็ได้ในพื้นที่ที่มีเส้นขอบเพื่อตรวจจุดของคุณ · `nisar.t` NISAR ground view · {district} | มุมมองพื้นดินจาก NISAR · {district} · `nisar.note` NISAR values are shown next to the score. They are not part of it. | ค่าจาก NISAR แสดงไว้ข้างคะแนน และไม่รวมอยู่ในคะแนน · `nisar.los` Total LOS change, {track} | ระยะ LOS เปลี่ยนรวม {track} · `nisar.water` Highest surface water | น้ำผิวดินสูงสุด · `nisar.open` Open {district} in Ground Pulse | เปิด {district} ใน Ground Pulse · `sat.nisar` as above | NISAR (NASA และ ISRO เรดาร์ย่าน L): พื้นดินเปลี่ยนไปอย่างไรและน้ำผิวดินอยู่ที่ใด ใน 50 เขต · `sat.s1` as above | Sentinel-1 (ESA เรดาร์ย่าน C): ประวัติน้ำท่วม 9 ปี ณ จุดใดก็ได้ในพื้นที่ที่ครอบคลุม · `sat.together` as above | รวมกัน: อะไรกำลังเปลี่ยนตอนนี้ และอะไรเคยท่วมมาก่อน · `land.promise` and `land.open` as in B (`land.open` = "Open Site Scout" | "เปิด Site Scout").
+
+### D. Dark theme (one theme, no switcher; replaces the colour values of section 12)
+Add `color-scheme: dark` to `:root`, `<meta name="color-scheme" content="dark">`, `<meta name="theme-color" content="#000000">`.
+```css
+:root {
+  --bg: #000000;  --surface: #0B0B0C;  --surface-glass: rgba(11,11,12,.88);
+  --text: #F5F5F5;  --muted: #BDBDBF;  --edge: #9A9B9D;
+  --accent: #FF7E4D;  --accent-ink: #0B0B0C;   --focus: #F5F5F5;
+  --ok-bg: #12261A;  --ok-ink: #7FD39B;  --demo-bg: #2A1208;  --demo-ink: #FFC2A8;
+  --bad-bg: #2A1114;  --bad-ink: #FF8A95;
+  --sh-dark: #3A3A3D;  --sh-light: #F5F5F5;
+  --raised: 0 0 0 1px var(--sh-dark), 0 18px 40px -18px rgba(0,0,0,.6);
+  --raised-sm: 0 0 0 1px var(--sh-dark);  --inset: inset 0 0 0 1px var(--edge);
+  --glass-border: rgba(255,255,255,.18);  --glass-blur: 14px;
+  --scrim: rgba(0,0,0,.7);  --gate-scrim: rgba(0,0,0,.72);
+  --hatch: #6B6C6E;
+  --ramp-1: #5C2310; --ramp-2: #A8360A; --ramp-3: #E04A12; --ramp-4: #FF7E4D; --ramp-5: #FFC2A8;
+  --link: #8EC1E6;  --brand: #FF5A1F;  --brand-ink: #0B0B0C;  --orbit: #000000;
+  --map-line: #FF7E4D;  --map-area-fill: rgba(255,90,31,.14);  --map-sel: #FF5A1F;  --map-casing: #000000;
+}
+```
+Values are SOLSAT dark roles (THEME.md) except `--ok-bg`, `--bad-bg`, `--ramp-1` and `--hatch`, which are derived. Unchanged: `--los-*`, `--water`, `--water-a`, `--outline`, dimensions, type, radii, fonts, `--ramp-opacity` (set .85). Non-token edits: `.chart .band` opacity .25; `.crosshair` halo `box-shadow: 0 0 0 1px var(--bg)`; panels use `backdrop-filter: blur(var(--glass-blur)) saturate(160%)` (SOLSAT lens); `.pin.hollow` unchanged.
+
+**Contrast (contrast.py)**
+| Pair | Ratio | Needs | Result |
+|---|---|---|---|
+| text on bg / surface | 19.26 / 18.04 | 4.5 | pass |
+| muted on bg / surface | 11.19 / 10.48 | 4.5 | pass |
+| text / muted on glass worst case #282828 (88% panel over white) | 13.52 / 7.85 | 4.5 | pass |
+| accent-ink on accent #FF7E4D | 7.81 | 4.5 | pass |
+| accent on bg / surface / glass worst case | 8.34 / 7.81 / 5.85 | 4.5 | pass |
+| brand-ink on brand #FF5A1F | 6.30 | 4.5 | pass |
+| link on surface / glass worst case | 10.23 / 7.66 | 4.5 | pass |
+| ok-ink on ok-bg / demo-ink on demo-bg / bad-ink on bad-bg | 8.87 / 11.38 / 7.84 | 4.5 | pass |
+| bad-ink on surface | 8.73 | 4.5 | pass |
+| edge on bg / surface / glass worst case (control borders) | 7.54 / 7.07 / 5.30 | 3.0 | pass |
+| focus #F5F5F5 on surface | 18.04 | 3.0 | pass |
+| accent line on the dark base map (#262626) | 6.01 | 3.0 | pass |
+| LOS ramp ends #3B4CC0 and #B40426 on surface | 2.79 | n/a | fixed data colours; frame and outlines carry the boundary |
+| hatch #6B6C6E on surface | 3.74 | 3.0 | pass |
+Lowest UI pair: 5.30 (edge on worst-case glass). Lowest overall: 2.79, the data colours we may not change.
+
+**Map and chrome**
+- Base map: switch the raster source to CARTO `dark_all` (`https://{a-d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png`, attribution "© OpenStreetMap contributors © CARTO"). Reason: MapLibre raster paint cannot invert, and darkening OSM tiles with `raster-brightness-max` makes the black labels vanish. If the build must keep OSM tiles, use `raster-brightness-min: 0, raster-brightness-max: .38, raster-saturation: -.85, raster-contrast: .2` and accept that labels are weak. No CSS filter on the canvas.
+- LOS overlay and legend gradient keep their colours. Legend bar gets a 1px `--edge` frame (its blue and red ends are 2.79:1 on dark). Water swatch keeps its 1px `--edge` border. Overlay opacity default stays 85%.
+- District outlines `--outline` white 70% (better on dark). Coverage rectangles `--map-line` 2px with `--map-area-fill`. Selected district: 6px `--map-casing` black under 3px `--map-sel`. Pin: `--accent` fill, 3px `--sh-light` ring. Charts: lines and dots `--accent`, water bars `--link`.
+- Panels over the map: dark glass `--surface-glass` (88%, blur 14, saturate 160%), 1px `--glass-border`, `--raised`; text is checked against the worst case above.
+- Focus ring: 3px `--focus` (#F5F5F5), offset 2px, everywhere. Badges: same classes, new pairs; status never colour-only (icon + text stay). Fields: background `--bg`, 1px `--edge`, invalid 2px `--bad-ink` + icon + `role="alert"` text; placeholder `--muted`. Gate: `--gate-scrim` with the existing 6px blur; dialogs: `--scrim`.
+- Logo: on dark the mark sits directly on the page (the dark tail merges into the ground, as in SOLSAT's own use); keep the 28px tile with a 1px `--glass-border`, no white tile. Recapture the hero and all deck screenshots in dark.
+
+### E. What else changes
+- Landing: top bar link order, hero (promise, primary, screenshot), section 2 order and sizes, a one-line strip under the hero with `sat.nisar`, `sat.s1`, `sat.together`, coverage columns order.
+- About dialog: title unchanged; two groups, headings "Site Scout" then "Ground Pulse"; the limits already in `about.*` move under Ground Pulse, the flag and grade notes (sections 8) under Site Scout.
+- Deck: slide order 1 Title (add the two-satellite line), 2 Why Bangkok, 3 Site Scout (old 5; visual: result card with the NISAR block plus the Radar Evidence strip), 4 Ground Pulse, from NISAR (old 3), 5 NISAR data, read without downloading (old 4), 6 What it does not claim, 7 Data, credits and AI use. Titles: "Site Scout: nine years of radar", "Ground Pulse, from NISAR"; slide 3 remember sentence "Tap a point, get a screening score, and see the radar passes behind it." stays. Slide 1 remember sentence: "Site flooding history and NISAR ground change, on one map." Dark stage (#000000), same chrome tokens.
+- For others to edit (not me): README headings "Ground watch" and "Site check"; SUBMISSION_DRAFT.md summary paragraph, "What it does" subsection order (Site Scout first), demo script and slide outline order and names, DESIGN-facing screenshots; app page `<title>` stays.
+
+### F. Do not build
+A light/dark switcher or `prefers-color-scheme` branching, a third mode, renaming URL params or the repo, new copy that says safe, suitable for sure or approved, a map search box for the example, an animated intro for the example point, NISAR values inside the score, a Thai transliteration of feature names, new chart types, a tile-proxy or custom map style, recolouring the LOS overlay or legend.
+
+**Notes from the orchestrator (override anything in section 13 that conflicts).**
+- Base map: do NOT switch to CARTO `dark_all` (CARTO tiles returned an "API key required" watermark earlier in this project). Keep the OpenStreetMap raster source and its attribution, and darken it in MapLibre by inverting luminance with raster paint: `raster-saturation: -1`, `raster-brightness-min: 0.72`, `raster-brightness-max: 0.04`, `raster-contrast: 0.1` (min above max inverts, so the light land becomes near-black and the dark labels and roads become light). Tune the two brightness values by eye until land is close to `--bg` and labels are readable but quieter than the overlay. This paint applies to the base layer only, never to the LOS or water overlays.
+- The example point shown on first open is fetched live like any other check and must be labelled "Example" until the user taps their own point. If the API call fails, show the normal error state, never a hard-coded result.
+- The NISAR block in the result card reads from districts.json (point-in-polygon on the district outlines already loaded). Outside Bangkok it is not rendered, and one line says NISAR coverage in this app is Bangkok only.

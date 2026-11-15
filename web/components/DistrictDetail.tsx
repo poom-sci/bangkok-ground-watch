@@ -76,7 +76,7 @@ function WaterChart({ entries, max }: { entries: (WaterEntry & { pct: number })[
   const lang = useLang();
   const n = entries.length;
   const { sel, setSel, onKeyDown } = useArrowSelect(n, n - 1);
-  const BW = 8, GAP = 2, width = Math.max(W, n * (BW + GAP) + PL + PR), base = H - PB, top = PT;
+  const BW = 8, GAP = 2, width = Math.max(W, n * (BW + GAP) + PL + PR), slot = (width - PL - PR) / n, base = H - PB, top = PT;
   const top2 = Math.max(...entries.map((e) => e.pct), 1);
   const cur = entries[Math.min(sel, n - 1)];
   const lab = (e: WaterEntry) => fmtDate(e.date, lang) ?? t('nodata');
@@ -88,10 +88,10 @@ function WaterChart({ entries, max }: { entries: (WaterEntry & { pct: number })[
           <line x1={PL} x2={width - PR} y1={base} y2={base} className="zero" />
           {entries.map((e, i) => {
             const h = e.pct > 0 ? Math.max(3, (e.pct / top2) * (base - top)) : 3;
-            const bx = PL + i * (BW + GAP);
+            const bx = PL + i * slot + (slot - BW) / 2;
             return (
               <g key={`${e.track}${e.date}`} onClick={() => setSel(i)}>
-                <rect x={bx - GAP / 2} y={top} width={BW + GAP} height={base - top} fill="transparent" />
+                <rect x={PL + i * slot} y={top} width={slot} height={base - top} fill="transparent" />
                 <rect x={bx} y={base - h} width={BW} height={h} className={e.pct > 0 ? 'bar-w' : 'bar-w zero-bar'} />
                 {i === sel && <rect x={bx - 2} y={base - h - 2} width={BW + 4} height={h + 4} className="bar-sel" />}
               </g>

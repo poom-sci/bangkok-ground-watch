@@ -2749,7 +2749,7 @@
   {
    "dcode": "1012",
    "name_th": "เขตยานนาวา",
-   "name_en": "Yan na wa",
+   "name_en": "Yan Nawa",
    "area_km2": 12.5,
    "pop": 82481,
    "buildings": 19750,
@@ -3565,7 +3565,7 @@
   {
    "dcode": "1015",
    "name_th": "เขตธนบุรี",
-   "name_en": "Thon buri",
+   "name_en": "Thon Buri",
    "area_km2": 8.46,
    "pop": 121539,
    "buildings": 1295,
@@ -5197,7 +5197,7 @@
   {
    "dcode": "1021",
    "name_th": "เขตบางขุนเทียน",
-   "name_en": "Bang Khun thain",
+   "name_en": "Bang Khun Thian",
    "area_km2": 122.21,
    "pop": 161642,
    "buildings": 7380,
@@ -7917,7 +7917,7 @@
   {
    "dcode": "1031",
    "name_th": "เขตบางคอแหลม",
-   "name_en": "Bang Kho laen",
+   "name_en": "Bang Kho Laem",
    "area_km2": 8.31,
    "pop": 96422,
    "buildings": 15990,
@@ -12721,7 +12721,7 @@
   {
    "dcode": "1049",
    "name_th": "เขตทุ่งครุ",
-   "name_en": "Thung khru",
+   "name_en": "Thung Khru",
    "area_km2": 32.95,
    "pop": 115823,
    "buildings": 2414,

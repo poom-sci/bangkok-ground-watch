@@ -4,10 +4,10 @@ Draft for the NASA Space Apps 2026 project page (challenge: Dancing with the SAR
 
 Project page: https://bangkok-ground-watch.vercel.app
 App: https://bangkok-ground-watch.vercel.app/app/
-Ground watch: https://bangkok-ground-watch.vercel.app/app/?mode=ground
-Site check: https://bangkok-ground-watch.vercel.app/app/?mode=site
+Ground Pulse: https://bangkok-ground-watch.vercel.app/app/?mode=ground
+Site Scout: https://bangkok-ground-watch.vercel.app/app/?mode=site
 One district (Lat Krabang): https://bangkok-ground-watch.vercel.app/app/?mode=ground&d=1011
-Slide deck: https://bangkok-ground-watch.vercel.app/slides/ (7 slides, live; PDF at https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf, 21 MB)
+Slide deck (PDF, 1.8 MB): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
 
 ---
 
@@ -17,11 +17,11 @@ Bangkok Ground Watch
 
 ## High-level summary (about 100 words)
 
-Bangkok sits on soft clay, floods every wet season, and keeps building. Bangkok Ground Watch turns NISAR L-band radar into a map anyone can read. "Ground watch" shows 17 NISAR interferograms as line-of-sight ground change and 19 NISAR backscatter scenes as surface water, with a date scrubber and a screening table for all 50 Bangkok districts. "Site check" adds nine years of Sentinel-1 flood history across Bangkok, Ayutthaya and Samut Sakhon: tap a point and get a 0 to 100 suitability screening score for a factory with rooftop solar, plus the evidence trail of every radar pass behind it. Every number links back to the satellite scenes that produced it.
+Bangkok sits on soft clay, floods every wet season, and keeps building. Bangkok Ground Watch turns NISAR L-band radar into a map anyone can read. "Ground Pulse" shows 17 NISAR interferograms as line-of-sight ground change and 19 NISAR backscatter scenes as surface water, with a date scrubber and a screening table for all 50 Bangkok districts. "Site Scout" adds nine years of Sentinel-1 flood history across Bangkok, Ayutthaya and Samut Sakhon: tap a point and get a 0 to 100 suitability screening score for a factory with rooftop solar, plus the evidence trail of every radar pass behind it. Every number links back to the satellite scenes that produced it.
 
 ## Link to project demo
 
-https://bangkok-ground-watch.vercel.app/slides/ (7 slides, public, no login; PDF linked from the deck). A 30 second video script is at the end of this file if the team prefers video.
+https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slides, PDF, public, no login). A 30 second video script is at the end of this file if the team prefers video.
 
 ## Link to final project
 
@@ -33,18 +33,18 @@ https://bangkok-ground-watch.vercel.app/slides/ (7 slides, public, no login; PDF
 
 ### What it does
 
-**Ground watch (NISAR).**
+**Ground Pulse (NISAR).**
 - Line-of-sight (LOS) change: 17 NISAR L2 GUNW interferograms over Bangkok, 9 on ascending track 112 and 8 on descending track 4, from 21 June to 31 October 2026. Each image is the change between two radar passes 12 to 36 days apart, shown in millimetres on a diverging scale, with a date scrubber and play button.
 - Surface water: 19 NISAR L2 GCOV scenes (HV backscatter), July to November 2026. Pixels below -19 dB are drawn as surface water and waterlogged land.
 - District screening: for each of Bangkok's 50 districts the app shows cumulative LOS change, the largest water share seen, population density and OpenStreetMap building density, and ranks districts by a simple screening index (the average percentile rank of water share, absolute LOS change and population density).
 
-**Site check (Sentinel-1, a second radar frequency).**
+**Site Scout (Sentinel-1, a second radar frequency).**
 - Tap a point inside a covered area (all of Bangkok, Ayutthaya or Samut Sakhon) and get a 0 to 100 suitability screening score for siting a factory with rooftop solar.
 - The score combines flood history (70 percent: the share of wet-season radar passes from 2017 to 2025 in which the pixel was water) and ground height (30 percent: Copernicus DEM, turned into a flood likelihood learned inside each area). Water, wetland and tree cover are excluded using ESA WorldCover.
 - "See the evidence" shows every radar pass used, year by year, with the radar image around the point, the water rule, and a link to find the scene. Examples: Rojana industrial park in Ayutthaya scores 26, with water in 10 of 130 wet-season passes; a paddy area in Lat Krabang, east Bangkok, scores 22 (36 of 130); Krathum Baen in Samut Sakhon scores 88 (0 of 130).
 - NASA POWER gives the solar irradiance at the point for context. It is not part of the score.
-- Each district has its own detail view (index and rank, LOS per radar pair with its spread, usable radar signal, water per scene, people and buildings) and a "Check a site here" button that jumps into Site check.
-- A display name (no password, kept in the browser only) lets a visitor save checked sites to "My sites". Guests can use everything else.
+- Each district has its own detail view (index and rank, LOS per radar pair with its spread, usable radar signal, water per scene, people and buildings) and a "Scout here" button that jumps into Site Scout.
+- A display name (no password, kept in the browser only) lets a visitor save checked sites to "Shortlist". Guests can use everything else.
 
 ### How it works
 
@@ -61,7 +61,7 @@ https://bangkok-ground-watch.vercel.app/slides/ (7 slides, public, no login; PDF
 - We assume positive LOS means range increase (away from the satellite). This follows from the NISAR algorithm document and the ISCE3 source, but we found no explicit sentence in the GUNW product specification, so the app never labels values as subsidence or uplift.
 - The NISAR record used is short (radar pairs from 21 June to 31 October 2026), so no yearly figure is shown.
 - The water layer also marks flooded paddies and ponds, and very smooth dry surfaces such as runways can be mistaken for water.
-- Radar can miss flooding between buildings and under vegetation. The site check flags this on every affected point, and grades (good, fair, poor) are provisional. In dense inner Bangkok most points score near 100 with that flag, so the site check is most useful on the city edge and open land.
+- Radar can miss flooding between buildings and under vegetation. The Site Scout flags this on every affected point, and grades (good, fair, poor) are provisional. In dense inner Bangkok most points score near 100 with that flag, so the Site Scout is most useful on the city edge and open land.
 - The flood history covers 2017 to 2025 only, so earlier floods such as 2011 are not in it. The Bangkok area has not been calibrated against optical imagery (Ayutthaya and Hat Yai were).
 - Usable radar signal for ground change is about 98 percent in dense inner districts but only 14 to 46 percent in the rural east (Lat Krabang, Khlong Sam Wa, Nong Chok, Min Buri), and Nong Chok has no ascending-track data.
 - Everything is at about 80 m. District values are averages. Nothing here assesses a single building or site; it is a screening aid.
@@ -120,7 +120,7 @@ TODO: add the same kind of statement for the solsat-siting engine (ask its autho
 | 0 to 4 s | Title on the map, LOS overlay visible | Bangkok Ground Watch. NISAR radar, made readable. |
 | 4 to 11 s | Press play on the scrubber, overlay changes through the dates | 17 NISAR interferograms, June to October 2026. Ground change along the radar line of sight. |
 | 11 to 16 s | Switch to Water, then open Districts and tap one | NISAR backscatter maps surface water. 50 districts screened. |
-| 16 to 24 s | Switch to Site check, fly to Ayutthaya, tap Rojana, card shows 26 | Site check: nine years of Sentinel-1 flood history. Tap a point, get a screening score. |
+| 16 to 24 s | Switch to Site Scout, fly to Ayutthaya, tap Rojana, card shows 26 | Site Scout: nine years of Sentinel-1 flood history. Tap a point, get a screening score. |
 | 24 to 28 s | See the evidence, year strip with water marks, radar image | Every score shows its evidence: 130 radar passes, water in 10. |
 | 28 to 30 s | About the data dialog, then URL | Open data, open code. bangkok-ground-watch.vercel.app |
 
@@ -128,9 +128,9 @@ TODO: add the same kind of statement for the solsat-siting engine (ask its autho
 
 1. Title: Bangkok Ground Watch, team, challenge, one-line tagline, app URL.
 2. Problem: soft ground, yearly floods, fast building. Radar data exists but is hard to read.
-3. Ground watch: screenshot of the LOS overlay with the scrubber. What NISAR GUNW shows.
+3. Ground Pulse: screenshot of the LOS overlay with the scrubber. What NISAR GUNW shows.
 4. Water and districts: screenshot of the water layer and the district panel. NISAR GCOV, fixed -19 dB threshold.
-5. Site check: screenshot of the result card (Rojana, 26) and the evidence view. Sentinel-1 2017 to 2025.
+5. Site Scout: screenshot of the result card (Rojana, 26) and the evidence view. Sentinel-1 2017 to 2025.
 6. How it works and what it does not claim: range-read NISAR windows, method in four steps, the limits list.
 7. What comes next with NISAR, data and credits, AI use statement, links.
 

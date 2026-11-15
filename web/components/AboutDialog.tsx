@@ -28,13 +28,14 @@ export default function AboutDialog({ open, span, years, onClose }: { open: bool
           <h2 id="about-title">{t('about.open')}</h2>
           <button type="button" className="btn" onClick={onClose}>{t('about.close')}</button>
         </div>
-        <ul className="about-list">{bullets.map((k) => <li key={k}>{k === 'about.4' ? (range ? t('about.4', { range }) : t('about.4b')) : t(k)}</li>)}</ul>
         {sitingEnabled && (
           <>
             <h3>{t('about.site')}</h3>
             <ul className="about-list">{(['about.site.1', 'about.site.2', 'about.site.3'] as Key[]).map((k) => <li key={k}>{t(k)}</li>)}<li>{years ? t(years.from > 2011 ? 'flag.history' : 'flag.history0', { from: fmtYear(years.from, lang), to: fmtYear(years.to, lang), x: fmtYear(2011, lang) }) : t('about.site.4')}</li></ul>
           </>
         )}
+        {sitingEnabled && <h3>{t('about.ground')}</h3>}
+        <ul className="about-list">{bullets.map((k) => <li key={k}>{k === 'about.4' ? (range ? t('about.4', { range }) : t('about.4b')) : t(k)}</li>)}</ul>
         <h3>{t('about.sources')}</h3>
         <ul className="about-list">{sources.map((k) => <li key={k}>{t(k)}</li>)}</ul>
       </div>

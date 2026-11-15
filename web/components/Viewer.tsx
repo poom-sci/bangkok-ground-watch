@@ -17,7 +17,7 @@ import { DistrictList } from './Districts';
 import DistrictDetail from './DistrictDetail';
 import AboutDialog from './AboutDialog';
 import type { MapViewMode, SiteProps } from './MapView';
-import { featureCentre, fmtMonthRange, fmtYear, sortedUnique, useDataset, type Dataset, type LayerType } from '@/lib/data';
+import { districtAtPoint, featureCentre, fmtMonthRange, fmtYear, sortedUnique, useDataset, type Dataset, type LayerType } from '@/lib/data';
 import type { Lang } from '@/lib/i18n';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false });
@@ -68,7 +68,8 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
     const q = new URLSearchParams(window.location.search);
     const m = q.get('mode');
     const d = q.get('d');
-    return { mode: m === 'ground' || (m === 'site' && sitingEnabled) ? (m as ModeId) : d && m !== 'site' ? ('ground' as ModeId) : null, d, area: q.get('area'), about: q.get('about') === '1' };
+    const lat = Number(q.get('lat')), lng = Number(q.get('lng'));
+    return { lat: q.get('lat') && Number.isFinite(lat) ? lat : null, lng: q.get('lng') && Number.isFinite(lng) ? lng : null, mode: m === 'ground' || (m === 'site' && sitingEnabled) ? (m as ModeId) : d && m !== 'site' ? ('ground' as ModeId) : null, d, area: q.get('area'), about: q.get('about') === '1' };
   }, []);
   const [selected, setSelected] = useState<string | null>(() => (params.d && params.mode !== 'site' && data.districts.some((x) => x.dcode === params.d) ? params.d : null));
   const [sheetFull, setSheetFull] = useState(false);
@@ -77,9 +78,9 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
   const [displayOpen, setDisplayOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(params.about);
   const [toast, setToast] = useState(false);
-  const [mode, setMode] = useState<'ground' | 'site'>(() => (params.mode === 'site' ? 'site' : 'ground'));
+  const [mode, setMode] = useState<'ground' | 'site'>(() => params.mode ?? (sitingEnabled ? 'site' : 'ground'));
   const isSite = mode === 'site';
-  const deepMode: ModeId | null = params.mode ?? (params.about ? 'ground' : null);
+  const deepMode: ModeId | null = params.mode ?? (params.about || params.lat != null ? (sitingEnabled ? 'site' : 'ground') : null);
   const [gate, setGate] = useState<'A' | 'B' | null>(() => (deepMode ? null : hasSeenEntry() ? 'B' : 'A'));
   const [gateLeaving, setGateLeaving] = useState(false);
   const [hello, setHello] = useState(false);
@@ -109,14 +110,16 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
   useEffect(() => {
     const was = sitePrev.current;
     const q = (sel: string) => document.querySelector<HTMLElement>(sel);
-    if (siteIsOpen && !was.open) siteHeadingRef.current?.focus();
+    if (siteIsOpen && !was.open) { if (!isExample) siteHeadingRef.current?.focus(); }
     else if (!siteIsOpen && was.open) q('[data-use-centre]')?.focus();
     else if (siteIsOpen && evOpen !== was.ev) { if (evOpen) siteHeadingRef.current?.focus(); else q('[data-evidence-open]')?.focus(); }
     sitePrev.current = { open: siteIsOpen, ev: evOpen };
   }, [siteIsOpen, evOpen]);
   const latestLos = useMemo(() => data.layers.filter((l) => l.type === 'gunw').sort((a, b) => (a.date < b.date ? -1 : 1)).pop() ?? null, [data.layers]);
   const goArea = useCallback((a: Area) => setFlyBox({ bbox: a.bbox, key: Date.now() }), []);
-  const dropPin = useCallback((lat: number, lng: number) => { site.check({ lat, lng }); setSiteOpen(true); setEvOpen(false); }, [site.check]);
+  const [isExample, setIsExample] = useState(false);
+  const exampleRef = useRef(false);
+  const dropPin = useCallback((lat: number, lng: number) => { setIsExample(false); site.check({ lat, lng }); setSiteOpen(true); setEvOpen(false); }, [site.check]);
   const changeMode = (m: 'ground' | 'site') => {
     setMode(m); setPlaying(false); setDisplayOpen(false); setMySitesOpen(false); store.update({ mode: m });
     if (m === 'ground') { site.clear(); setSiteOpen(false); setEvOpen(false); }
@@ -182,8 +185,9 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
   };
 
   const sheetH = typeof window === 'undefined' ? 0 : window.innerHeight;
+  const sideR = isSite ? (siteOpen && site.pin ? (evOpen ? 440 : 360) + 48 : 48) : null;
   const padding = desktop
-    ? { top: 80, bottom: 96, left: (wide ? 296 : 264) + 48, right: panelOpen ? (wide ? 360 : 320) + 48 : 48 }
+    ? sideR != null ? { top: 96, bottom: 96, left: (wide ? 296 : 296) + 48, right: sideR } : { top: 80, bottom: 96, left: (wide ? 296 : 264) + 48, right: panelOpen ? (selected ? (wide ? 400 : 360) : (wide ? 360 : 320)) + 48 : 48 }
     : { top: 120, bottom: panelOpen && selected ? Math.round(sheetH * 0.45) + 24 : 230, left: 24, right: 24 };
 
   const display = (
@@ -251,6 +255,16 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
     setFlyBox({ center: [c.lng, c.lat], zoom: 12, key: Date.now() });
     dropPin(c.lat, c.lng);
   };
+  useEffect(() => {
+    if (exampleRef.current || !isSite || gate || !site.areas || site.pin) return;
+    exampleRef.current = true;
+    const own = params.lat != null && params.lng != null;
+    const pt = own ? { lat: params.lat as number, lng: params.lng as number } : { lat: 13.75, lng: 100.83 };
+    setIsExample(!own);
+    site.check(pt); setSiteOpen(true); setEvOpen(false);
+    const bkk = site.areas.find((a) => a.id === 'bangkok');
+    setFlyBox(!own && bkk ? { bbox: bkk.bbox, key: Date.now() } : { center: [pt.lng, pt.lat], zoom: own ? 13 : 11, key: Date.now() });
+  }, [isSite, gate, site.areas, site.pin, site.check, params.lat, params.lng]);
   const goStart = () => { setHello(false); setGate('B'); setGateLeaving(false); };
   const pinId = site.pin ? siteId(site.pin.lat, site.pin.lng) : null;
   const saved = pinId ? profile.sites.some((s) => s.id === pinId) : false;
@@ -301,6 +315,7 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || gate || document.querySelector('dialog[open]')) return;
+      if (displayOpen) { setDisplayOpen(false); requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-display-toggle]')?.focus()); return; }
       if (isSite) {
         if (mySitesOpen) setMySitesOpen(false);
         else if (siteOpen && site.pin) { if (evOpen) setEvOpen(false); else setSiteOpen(false); }
@@ -310,6 +325,14 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  const coverageAlert = (
+    <div className="alert-err" role="alert">
+      <p><Warn />{t('state.error')}</p>
+      <button type="button" className="btn" onClick={site.retryAreas}>{t('retry')}</button>
+    </div>
+  );
+  const nisarCode = site.res.s === 'ok' && site.pin ? districtAtPoint(data.geo, site.pin.lat, site.pin.lng) : null;
+  const nisarDistrict = nisarCode ? data.districts.find((d) => d.dcode === nisarCode) ?? null : null;
   const useCentre = () => { const c = centerRef.current?.(); if (c) dropPin(c.lat, c.lng); };
   const losLegend = overlayOn ? <Legend mode="radar" type="gunw" layer={latestLos} rangeMm={data.rangeMm} isNisar={data.isNisar} /> : null;
   const legend = <Legend mode={mapView} type={type} layer={current} rangeMm={data.rangeMm} isNisar={data.isNisar} />;
@@ -322,8 +345,8 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
 
       <div className="topbar">
         <header className="chip glass">
-          <h1><button type="button" className="title-btn" aria-label={t('toStart')} onClick={goStart}>{t('title')}</button></h1>
-          <p className="subtitle">{t('subtitle')}</p>
+          <h1><button type="button" className="title-btn" aria-label={`${t('title')}: ${t('toStart')}`} onClick={goStart}>{t('title')}</button></h1>
+          <p className="subtitle">{t(isSite ? 'start.site' : 'start.ground')}</p>
           {isSite ? <span className="badge demo"><Warn />{t('badge.prov')}</span> : data.isNisar != null && <Badge nisar={data.isNisar} />}
         </header>
         <div className="toolbar">
@@ -338,7 +361,7 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
  {sitingEnabled && (
           <div className="modesw">
             <Segmented label={t('mode.label')} value={mode} onChange={changeMode}
-              options={[{ value: 'ground', label: t('mode.ground') }, { value: 'site', label: t('mode.site') }]} />
+              options={sitingEnabled ? [{ value: 'site', label: t('mode.site') }, { value: 'ground', label: t('mode.ground') }] : [{ value: 'ground', label: t('mode.ground') }]} />
           </div>
         )}
       </div>
@@ -351,11 +374,11 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
       {desktop ? (
         <aside className="leftcard glass">
           <h3 className="sub-h">{t('site.areas')}</h3>
-          <p className="comp-sub">{t('site.hint')}</p>
-          {site.areasError ? <p className="comp-sub">{t('state.error')}</p> : site.areas == null ? <p className="comp-sub">{t('site.loadingAreas')}</p>
+          {site.areas && <p className="comp-sub">{t('site.hint')}</p>}
+          {site.areasError ? coverageAlert : site.areas == null ? <p className="comp-sub">{t('site.loadingAreas')}</p>
             : site.areas.length === 0 ? <p className="comp-sub">{t('site.noAreas')}</p>
             : <ul className="arealist">{site.areas.map((a) => <AreaRow key={a.id} area={a} onGo={goArea} />)}</ul>}
-          <button type="button" className="btn wide" data-use-centre onClick={useCentre}>{t('site.center')}</button>
+          <button type="button" className="btn wide" data-use-centre disabled={!site.areas} onClick={useCentre}>{t('site.center')}</button>
           <DisplayToggle open={displayOpen} onToggle={() => setDisplayOpen((v) => !v)} controls={displayId} />
           <div id={displayId} hidden={!displayOpen}>{siteDisplay}</div>
           {losLegend}
@@ -369,10 +392,10 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
           {losLegend && <div className="glass legend-float">{losLegend}</div>}
           <div className="dock glass">
             {displayOpen && <div id={displayId} className="popover glass">{siteDisplay}</div>}
-            <p className="comp-sub dock-hint">{t('site.hint')}</p>
-            <div className="chips-row">{(site.areas ?? []).map((a) => <button key={a.id} type="button" className="btn chip-btn" onClick={() => goArea(a)}>{a.name}</button>)}<button type="button" className="btn chip-btn" data-use-centre onClick={useCentre}>{t('site.center')}</button></div>
+            {site.areasError ? coverageAlert : site.areas && <p className="comp-sub dock-hint">{t('site.hint')}</p>}
+            <div className="chips-row">{(site.areas ?? []).map((a) => <button key={a.id} type="button" className="btn chip-btn" onClick={() => goArea(a)}>{a.name}</button>)}<button type="button" className="btn chip-btn" data-use-centre disabled={!site.areas} onClick={useCentre}>{t('site.center')}</button></div>
             <div className="dock-btns">
-              <button type="button" className="btn" aria-expanded={displayOpen} aria-controls={displayId} onClick={() => setDisplayOpen((v) => !v)}>
+              <button type="button" className="btn" data-display-toggle aria-expanded={displayOpen} aria-controls={displayId} onClick={() => setDisplayOpen((v) => !v)}>
                 <span>{t('display')}</span><Chevron open={displayOpen} />
               </button>
               <button type="button" className="btn" data-mysites-trigger aria-expanded={mySitesOpen} onClick={() => (mySitesOpen ? setMySitesOpen(false) : showMySites())}>{t('my.title')}</button>
@@ -400,7 +423,7 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
             {evOpen ? (
               site.ev.s === 'ok' ? <SiteEvidence ev={site.ev.data} landcover={site.res.s === 'ok' ? site.res.suit.landcover : null} onBack={() => setEvOpen(false)} />
                 : <div><button type="button" className="btn back" onClick={() => setEvOpen(false)}>{t('back')}</button><p className="comp-sub">{site.ev.s === 'error' ? t('state.error') : t('loading')}</p></div>
-            ) : <SiteResult res={site.res} ev={site.ev} onEvidence={() => setEvOpen(true)} onRetry={() => site.pin && site.check(site.pin)} onGo={goArea} saved={record() ? saved : null} onSave={record() ? onSave : null} years={resultYears} />}
+            ) : <SiteResult res={site.res} ev={site.ev} onEvidence={() => setEvOpen(true)} onRetry={() => site.pin && site.check(site.pin)} onGo={goArea} saved={record() ? saved : null} onSave={record() ? onSave : null} example={isExample} nisar={site.res.s === 'ok' ? nisarDistrict ? { district: nisarDistrict, tracks: allTracks, track, waterAvailable } : 'outside' : null} years={resultYears} />}
           </div>
         </aside>
       )}
@@ -442,7 +465,7 @@ function Workspace({ data, onLang: setLangRaw, lang }: { data: Dataset; onLang: 
         <aside className="panel glass" data-detail={detail ? 'true' : 'false'} data-full={sheetFull ? 'true' : undefined} aria-label={t('districts')}>
           <button type="button" className="handle" aria-label={t(detail ? 'd.expand' : 'about.close')} onClick={() => (detail ? setSheetFull((v) => !v) : setPanelOpen(false))}><span /></button>
           <div className="panel-head">
-            <h2 ref={headingRef} tabIndex={-1}>{t('districts')}</h2>
+            <h2 ref={headingRef} tabIndex={-1}>{t(detail ? 'd.profile' : 'districts')}</h2>
             <button type="button" className="btn" onClick={() => setPanelOpen(false)}>{t('about.close')}</button>
           </div>
           <div className="panel-body">

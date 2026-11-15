@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, LangProvider, Segmented, useLang, useT } from './ui';
 import UserMenu, { SignOutDialog } from './UserMenu';
+import { SolsatMark, LogoTile } from './Brand';
 import { fmtDate, fmtMonthRange, loadDataset, parseTrack, type Dataset } from '@/lib/data';
 import { fetchCoverage, sitingEnabled, type Area } from '@/lib/siting';
 import { useProfile } from '@/lib/user';
@@ -78,10 +79,10 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
   return (
     <div className="land">
       <header className="land-bar">
-        <a className="wordmark" href="/">{t('title')}</a>
+        <div className="bar-l"><a className="wordmark" href="/">{t('title')}</a><SolsatMark size={28} label={t('brand.by')} /></div>
         <div className="land-bar-r">
           <Segmented label={t('lang.label')} value={lang} onChange={onLang} options={[{ value: 'en', label: 'EN' }, { value: 'th', label: 'TH' }]} />
-          <a className="btn land-open" href="/app/">{t('land.open')}</a>
+          <a className="btn land-open" href="/app/">{t('land.openApp')}</a>
           {named && <SignedInChip />}
         </div>
       </header>
@@ -92,7 +93,7 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
             <h1>{t('title')}</h1>
             <p className="promise">{t('land.promise')}</p>
             <div className="hero-actions">
-              <a className="btn primary" href="/app/">{t('land.open')}</a>
+              <a className="btn primary" href={sitingEnabled ? '/app/?mode=site' : '/app/?mode=ground'}>{t('land.open')}</a>
               <a className="btn" href="#how">{t('land.how')}</a>
             </div>
             <p className="comp-sub">{t('land.challenge')}</p>
@@ -103,18 +104,20 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
           </div>
         </section>
 
+        <section className="sat-strip" aria-label={t('land.nav')}>
+          <p>{t('sat.s1')}</p>
+          <p>{t('sat.nisar')}</p>
+          <p className="together">{t('sat.together')}</p>
+        </section>
+
         <section className="land-sec" aria-labelledby="do">
           <h2 id="do">{t('land.do')}</h2>
-          <div className="land-cards">
-            <a className="land-card" href="/app/?mode=ground">
-              <span className="sub-h">{t('land.ground.t')}</span>
-              <span>{t('land.ground.l')}</span>
-              {stats && stats.n > 0 && stats.pairs > 0 && <span className="mono comp-sub">{t('land.ground.ex', { n: stats.n, p: stats.pairs })}</span>}
-              <span className="card-cta">{t('land.ground.cta')} <Arrow /></span>
-            </a>
+          <div className="land-cards lead">
             {sitingEnabled && (
               <a className="land-card" href="/app/?mode=site">
                 <span className="sub-h">{t('land.site.t')}</span>
+                <span className="src-tag">{t('tag.s1')}</span>
+                <span>{t('start.site')}</span>
                 <span>{t('land.site.l')}</span>
                 <span className="mono comp-sub">{t('land.site.ex1')}</span>
                 <span className="mono comp-sub">{t('land.site.ex2')}</span>
@@ -122,12 +125,43 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
                 <span className="card-cta">{t('land.site.cta')} <Arrow /></span>
               </a>
             )}
+            <a className="land-card" href="/app/?mode=ground">
+              <span className="sub-h">{t('land.ground.t')}</span>
+              <span className="src-tag">{t('nisar.tag')}</span>
+              <span>{t('start.ground')}</span>
+              <span>{t('land.ground.l')}</span>
+              {stats && stats.n > 0 && stats.pairs > 0 && <span className="mono comp-sub">{t('land.ground.ex', { n: stats.n, p: stats.pairs })}</span>}
+              <span className="card-cta">{t('land.ground.cta')} <Arrow /></span>
+            </a>
           </div>
         </section>
 
         <section className="land-sec" aria-labelledby="covers">
           <h2 id="covers">{t('land.covers')}</h2>
           <div className="land-cols">
+            {sitingEnabled && (
+              <div className="cov">
+                <h3 className="sub-h">{t('cov.site')}</h3>
+                <p className="cov-h">{t('cov.yes')}</p>
+                <ul className="cov-list">
+                  <li><Check /><span>{t('cov.s1')}</span></li>
+                  <li>
+                    <Check />
+                    <span>
+                      {Array.isArray(areas) && areas.length > 0 ? (
+                        <>{t('cov.s2')} <span className="chips-inline">{areas.map((a) => <a key={a.id} className="btn chip-btn" href={`/app/?mode=site&area=${encodeURIComponent(a.id)}`}>{a.name}</a>)}</span></>
+                      ) : areas === 'fail' ? t('cov.loading') : areas === null ? <span aria-hidden="true">…</span> : t('cov.loading')}
+                    </span>
+                  </li>
+                </ul>
+                <p className="cov-h">{t('cov.no')}</p>
+                <ul className="cov-list muted">
+                  <li><Minus /><span>{t('cov.sn1')}</span></li>
+                  {Array.isArray(areas) && !hasBangkok && <li><Minus /><span>{t('cov.sn2')}</span></li>}
+                  <li><Minus /><span>{t('cov.sn3')}</span></li>
+                </ul>
+              </div>
+            )}
             <div className="cov">
               <h3 className="sub-h">{t('cov.ground')}</h3>
               <p className="cov-h">{t('cov.yes')}</p>
@@ -152,29 +186,6 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
                 </label>
               )}
             </div>
-            {sitingEnabled && (
-              <div className="cov">
-                <h3 className="sub-h">{t('cov.site')}</h3>
-                <p className="cov-h">{t('cov.yes')}</p>
-                <ul className="cov-list">
-                  <li><Check /><span>{t('cov.s1')}</span></li>
-                  <li>
-                    <Check />
-                    <span>
-                      {Array.isArray(areas) && areas.length > 0 ? (
-                        <>{t('cov.s2')} <span className="chips-inline">{areas.map((a) => <a key={a.id} className="btn chip-btn" href={`/app/?mode=site&area=${encodeURIComponent(a.id)}`}>{a.name}</a>)}</span></>
-                      ) : areas === 'fail' ? t('cov.loading') : areas === null ? <span aria-hidden="true">…</span> : t('cov.loading')}
-                    </span>
-                  </li>
-                </ul>
-                <p className="cov-h">{t('cov.no')}</p>
-                <ul className="cov-list muted">
-                  <li><Minus /><span>{t('cov.sn1')}</span></li>
-                  {Array.isArray(areas) && !hasBangkok && <li><Minus /><span>{t('cov.sn2')}</span></li>}
-                  <li><Minus /><span>{t('cov.sn3')}</span></li>
-                </ul>
-              </div>
-            )}
           </div>
         </section>
 
@@ -198,11 +209,12 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
       </main>
 
       <footer className="land-foot">
+        <p className="foot-brand"><LogoTile size={40} /><span>{t('foot.built')}</span></p>
         <p>{t('foot.credits')}</p>
         <p>{REPO ? <>{t('foot.ossLink')} <a className="link" href={REPO}>{REPO}</a></> : t('foot.oss')}</p>
         <p>{t('foot.ai')}</p>
         <p>{t('foot.na')}</p>
-        <p><a className="link" href="/slides/">{t('foot.deck')}</a></p>
+        <p><a className="link" href="/slides/bangkok-ground-watch.pdf" download>{t('foot.deck')}</a></p>
       </footer>
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, Warn, NoData, useLang, useT } from './ui';
-import { fmtNum, fmtYear } from '@/lib/data';
+import { Check, Warn, NoData, Pending, useLang, useT } from './ui';
+import { fmtNum, fmtYear, parseTrack, type District } from '@/lib/data';
 import { landcoverLabel, type Key } from '@/lib/i18n';
 import type { Area, EvState, Res, Suit } from '@/lib/siting';
 
@@ -45,7 +45,38 @@ function Comp({ title, text, sub, sub2 }: { title: string; text: string | null; 
   );
 }
 
-function Body({ suit, ev, onEvidence, saved, onSave, years }: { suit: Suit; ev: EvState; onEvidence: () => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null }) {
+export interface NisarInfo { district: District; tracks: string[]; track: string; waterAvailable: boolean }
+
+function NisarBlock({ n }: { n: NisarInfo }) {
+  const t = useT();
+  const lang = useLang();
+  const d = n.district;
+  const name = lang === 'en' ? d.nameEn : d.nameTh;
+  const label = (k: string) => { const p = parseTrack(k); return p ? t(p.dir === 'A' ? 'track.A' : 'track.D', { n: p.n }) : k; };
+  const waters = d.water.flatMap((w) => (w.pct != null ? [w.pct] : []));
+  const wMax = fmtNum(waters.length ? Math.max(...waters) : d.waterMaxPct, 1);
+  const coh = d.los.filter((x) => x.track === n.track && x.coherent != null).map((x) => x.coherent as number);
+  const usable = coh.length ? Math.round(coh.reduce((a, b) => a + b, 0) / coh.length) : null;
+  return (
+    <section className="nisar-block" aria-label={t('nisar.t', { district: name })}>
+      <span className="nisar-tag">{t('nisar.tag')}</span>
+      <h3>{t('nisar.t', { district: name })}</h3>
+      <dl>
+        {n.tracks.map((k) => {
+          const v = fmtNum(d.losSum[k], 1);
+          return <div className="nisar-row" key={k}><dt>{t('nisar.los', { track: label(k) })}</dt><dd>{v ? <><span className="mono">{v}</span> {t('unit.mm')}</> : <NoData />}</dd></div>;
+        })}
+        <div className="nisar-row"><dt>{t('nisar.water')}</dt><dd>{wMax ? <><span className="mono">{wMax}</span> %</> : n.waterAvailable ? <NoData /> : <Pending />}</dd></div>
+        <div className="nisar-row"><dt>{t('d.usable', { p: usable ?? '' }).replace(/:.*$/, '')}</dt><dd>{usable != null ? <><span className="mono">{usable}</span> %</> : <NoData />}</dd></div>
+      </dl>
+      {usable != null && usable < 50 && <p className="comp-sub">{t('d.lowUsable', { p: usable })}</p>}
+      <p className="comp-sub">{t('nisar.note')}</p>
+      <a className="btn" href={`/app/?mode=ground&d=${encodeURIComponent(d.dcode)}`}>{t('nisar.open', { district: name })}</a>
+    </section>
+  );
+}
+
+function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar }: { suit: Suit; ev: EvState; onEvidence: () => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null; example: boolean; nisar: NisarInfo | 'outside' | null }) {
   const t = useT();
   const lang = useLang();
   const excluded = suit.score == null;
@@ -68,10 +99,12 @@ function Body({ suit, ev, onEvidence, saved, onSave, years }: { suit: Suit; ev: 
         {excluded ? <span className="noscore">{t('state.none')}</span> : <span className="score mono">{Math.round(suit.score ?? 0)}</span>}
         {!excluded && <span className="of mono">/ 100</span>}
         {!excluded && (suit.grade ? <span className={`grade ${suit.grade}`}>{gradeIcon}{t(`grade.${suit.grade}` as Key)}</span> : <span className="grade none">{t('grade.none')}</span>)}
+        {example && <span className="ex-chip">{t('ex.chip')}</span>}
       </div>
       {!excluded && (
         <p className="comp-sub">{t('grade.prov')}{suit.level ? ` · ${t('conf', { level: t(`conf.${suit.level}` as Key) })}` : ''}</p>
       )}
+      {example && <p className="ex-note">{t('ex.note')}</p>}
       {urban && <p className="banner urban" role="note"><Warn /><span>{t('flag.urban')}</span></p>}
       {excluded && reasons.map((c) => <p key={c} className="banner neutral">{t(EXCL_KEYS[c] ?? 'excl.other')}</p>)}
       {!excluded && (
@@ -86,6 +119,7 @@ function Body({ suit, ev, onEvidence, saved, onSave, years }: { suit: Suit; ev: 
           )}
         </>
       )}
+      {nisar === 'outside' ? <p className="comp-sub">{t('nisar.outside')}</p> : nisar ? <NisarBlock n={nisar} /> : null}
       <dl className="secondary">
         <div><dt>{t('landcover')}</dt><dd>{suit.landcover ? landcoverLabel(suit.landcover, lang) : <NoData />}</dd></div>
         {!excluded && <div><dt>{t('sun')}</dt><dd>{sun ? t('sun.v', { x: sun }) : <NoData />}</dd></div>}
@@ -104,8 +138,8 @@ function Body({ suit, ev, onEvidence, saved, onSave, years }: { suit: Suit; ev: 
   );
 }
 
-export default function SiteResult({ res, ev, onEvidence, onRetry, onGo, saved, onSave, years }: {
-  res: Res; ev: EvState; onEvidence: () => void; onRetry: () => void; onGo: (a: Area) => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null;
+export default function SiteResult({ res, ev, onEvidence, onRetry, onGo, saved, onSave, years, example, nisar }: {
+  res: Res; ev: EvState; onEvidence: () => void; onRetry: () => void; onGo: (a: Area) => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null; example: boolean; nisar: NisarInfo | 'outside' | null;
 }) {
   const t = useT();
   if (res.s === 'loading') return <div aria-busy="true" aria-label={t('loading')}><Skeleton /></div>;
@@ -122,7 +156,7 @@ export default function SiteResult({ res, ev, onEvidence, onRetry, onGo, saved, 
       <ul className="arealist">{res.areas.map((a) => <AreaRow key={a.id} area={a} onGo={onGo} />)}</ul>
     </div>
   );
-  if (res.s === 'ok') return <Body suit={res.suit} ev={ev} onEvidence={onEvidence} saved={saved} onSave={onSave} years={years} />;
+  if (res.s === 'ok') return <Body suit={res.suit} ev={ev} onEvidence={onEvidence} saved={saved} onSave={onSave} years={years} example={example} nisar={nisar} />;
   return null;
 }
 
