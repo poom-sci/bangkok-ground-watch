@@ -119,6 +119,7 @@ export default function DistrictsPage({ data, tracks, selected, onOpen, onClose,
             </select>
           </label>
         </div>
+        <p className="comp-sub index-note">{t('d.indexNote')}</p>
         {shown.length === 0 ? <p className="comp-sub">{t('none.q', { q })}</p> : (
           <>
             <div className="table-wrap">

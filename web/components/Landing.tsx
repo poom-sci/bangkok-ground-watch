@@ -96,6 +96,7 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
               <a className="btn primary" href={sitingEnabled ? '/app/?tab=site' : '/app/?tab=ground'}>{t('land.open')}</a>
               <a className="btn" href="#how">{t('land.how')}</a>
             </div>
+            <p className="comp-sub">{t('land.audience')}</p>
             <p className="comp-sub">{t('land.challenge')}</p>
           </div>
           <div className="hero-shot">

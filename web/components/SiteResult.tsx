@@ -33,13 +33,14 @@ function Skeleton() {
   );
 }
 
-function Comp({ title, text, sub, sub2 }: { title: string; text: string | null; sub: string | null; sub2: number | null }) {
+function Comp({ title, text, sub, sub2, note }: { title: string; text: string | null; sub: string | null; sub2: number | null; note?: string | null }) {
   const t = useT();
   return (
     <div className="comp">
       <p className="comp-title">{title}</p>
       <p className="comp-text">{text ?? t('nodata')}</p>
       {sub && <p className="comp-sub">{sub}</p>}
+      {note && <p className="comp-sub faint">{note}</p>}
       {bar(sub2)}
     </div>
   );
@@ -67,7 +68,7 @@ function NisarBlock({ n }: { n: NisarInfo }) {
           return <div className="nisar-row" key={k}><dt>{t('nisar.los', { track: label(k) })}</dt><dd>{v ? <><span className="mono">{v}</span> {t('unit.mm')}</> : <NoData />}</dd></div>;
         })}
         <div className="nisar-row"><dt>{t('nisar.water')}</dt><dd>{wMax ? <><span className="mono">{wMax}</span> %</> : n.waterAvailable ? <NoData /> : <Pending />}</dd></div>
-        <div className="nisar-row"><dt>{t('d.usable', { p: usable ?? '' }).replace(/:.*$/, '')}</dt><dd>{usable != null ? <><span className="mono">{usable}</span> %</> : <NoData />}</dd></div>
+        <div className="nisar-row"><dt>{t('d.usable', { scope: label(n.track), p: usable ?? '' }).replace(/:.*$/, '')}</dt><dd>{usable != null ? <><span className="mono">{usable}</span> %</> : <NoData />}</dd></div>
       </dl>
       {usable != null && usable < 50 && <p className="comp-sub">{t('d.lowUsable', { p: usable })}</p>}
       <p className="comp-sub">{t('nisar.note')}</p>
@@ -96,11 +97,13 @@ function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar }: { 
   return (
     <div className="result">
       <div className="score-row">
-        {excluded ? <span className="noscore">{t('state.none')}</span> : <span className="score mono">{Math.round(suit.score ?? 0)}</span>}
-        {!excluded && <span className="of mono">/ 100</span>}
-        {!excluded && (suit.grade ? <span className={`grade ${suit.grade}`}>{gradeIcon}{t(`grade.${suit.grade}` as Key)}</span> : <span className="grade none">{t('grade.none')}</span>)}
+        {excluded ? <span className="noscore">{t('state.none')}</span> : urban ? <span className="noscore">{t('rated.none')}</span> : <span className="score mono">{Math.round(suit.score ?? 0)}</span>}
+        {!excluded && !urban && <span className="of mono">/ 100</span>}
+        {!excluded && urban && <span className="grade none">{t('rated.pill')}</span>}
+        {!excluded && !urban && (suit.grade ? <span className={`grade ${suit.grade}`}>{gradeIcon}{t(`grade.${suit.grade}` as Key)}</span> : <span className="grade none">{t('grade.none')}</span>)}
         {example && <span className="ex-chip">{t('ex.chip')}</span>}
       </div>
+      {!excluded && urban && <p className="comp-sub">{t('engine.score', { n: Math.round(suit.score ?? 0) })}</p>}
       {!excluded && (
         <p className="comp-sub">{t('grade.prov')}{suit.level ? ` · ${t('conf', { level: t(`conf.${suit.level}` as Key) })}` : ''}</p>
       )}
@@ -110,7 +113,7 @@ function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar }: { 
       {!excluded && (
         <>
           <Comp title={t('comp.flood')} text={floodText} sub={yearsPct ? t('comp.flood.years', { p: yearsPct }) : null} sub2={suit.floodSub} />
-          <Comp title={t('comp.elev')} text={h ? t('comp.elev.v', { h }) : null} sub={pf ? t('comp.elev.p', { p: pf }) : null} sub2={suit.elevSub} />
+          <Comp title={t('comp.elev')} text={h ? t('comp.elev.v', { h }) : null} sub={pf ? t('comp.elev.p', { p: pf }) : null} note={pf ? t('comp.elev.note') : null} sub2={suit.elevSub} />
           {(things.length > 0 || years) && (
             <section aria-labelledby="things">
               <h3 id="things" className="sub-h">{t('things')}</h3>

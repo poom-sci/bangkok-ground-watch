@@ -22,7 +22,7 @@ function Row({ s, onPick, onRemove }: { s: SavedSite; onPick: (s: SavedSite) => 
           <span className="dsub">{date ? t('my.saved', { date }) : ''}</span>
         </span>
         <span className="srow-score mono">{fmtNum(s.score, 0) ?? t('nodata')}</span>
-        {s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}
+        {s.urban ? <span className="grade small none">{t('rated.pill')}</span> : s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}
       </button>
       <button type="button" className="btn icon-btn" aria-label={`${t('my.remove')}: ${s.areaName}`} title={t('my.remove')} onClick={() => onRemove(s)}>
         <svg className="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.500h10 M6.500 4.500V3h3v1.500 M4.500 4.500l.6 8.500h5.800l.6-8.500" fill="none" stroke="currentColor" strokeWidth="1.600" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -36,7 +36,7 @@ export default function MySites({ sites, guest, limit, onPick, onRemove, onAdd }
 }) {
   const t = useT();
   const [all, setAll] = useState(false);
-  if (guest) return (
+  if (guest && sites.length === 0) return (
     <div className="my-empty"><BookmarkIcon /><p>{t('my.guest')}</p><button type="button" className="btn" onClick={onAdd}>{t('user.add')}</button></div>
   );
   if (sites.length === 0) return (

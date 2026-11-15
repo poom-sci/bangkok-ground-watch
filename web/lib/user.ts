@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import type { Lang } from './i18n';
 
 export type ModeId = 'ground' | 'site';
-export interface SavedSite { id: string; lat: number; lng: number; areaId: string; areaName: string; score: number; grade: 'good' | 'fair' | 'poor' | null; savedAt: string }
+export interface SavedSite { id: string; lat: number; lng: number; areaId: string; areaName: string; score: number; grade: 'good' | 'fair' | 'poor' | null; savedAt: string; urban?: boolean }
 export interface Profile { key: string | null; name: string; mode: ModeId | null; lang: Lang | null; sites: SavedSite[] }
 
 export const MAX_SITES = 50;
@@ -41,7 +41,7 @@ function parseSites(v: unknown): SavedSite[] {
     seen.add(o.id);
     const g = o.grade;
     return [{ id: o.id, lat, lng, score, areaId: typeof o.areaId === 'string' ? o.areaId : '', areaName: typeof o.areaName === 'string' ? o.areaName : '',
-      grade: g === 'good' || g === 'fair' || g === 'poor' ? g : null, savedAt: o.savedAt }];
+      grade: g === 'good' || g === 'fair' || g === 'poor' ? g : null, savedAt: o.savedAt, urban: o.urban === true }];
   }).slice(0, MAX_SITES);
 }
 
@@ -56,12 +56,12 @@ function load(key: string | null): Profile {
     return { key, name: typeof o.name === 'string' && o.name ? clip(o.name, 24) : key, mode: isMode(o.mode) ? o.mode : null, lang: isLang(o.lang) ? o.lang : null, sites: parseSites(o.sites) };
   }
   const o = parse(read('bgw:guest'));
-  return { key: null, name: '', mode: isMode(o.mode) ? o.mode : null, lang: isLang(o.lang) ? o.lang : null, sites: [] };
+  return { key: null, name: '', mode: isMode(o.mode) ? o.mode : null, lang: isLang(o.lang) ? o.lang : null, sites: parseSites(o.sites) };
 }
 
 function persist(p: Profile) {
   if (p.key) write(`bgw:u:${p.key}`, JSON.stringify({ name: p.name, mode: p.mode, lang: p.lang, sites: p.sites }));
-  else write('bgw:guest', JSON.stringify({ mode: p.mode, lang: p.lang }));
+  else write('bgw:guest', JSON.stringify({ mode: p.mode, lang: p.lang, sites: p.sites }));
 }
 
 export const hasSeenEntry = () => read('bgw:seen') === '1';
@@ -79,6 +79,15 @@ export function useProfile() {
     const key = nameKey(raw);
     const existing = load(key);
     let next: Profile = { ...existing, key, name };
+    if (read('bgw:user') == null) {
+      const g = load(null);
+      if (g.sites.length) {
+        let merged = next;
+        [...g.sites].reverse().forEach((s) => { merged = withSite(merged, s); });
+        next = merged;
+        write('bgw:guest', JSON.stringify({ mode: g.mode, lang: g.lang, sites: [] }));
+      }
+    }
     if (mutate) next = mutate(next);
     write('bgw:user', key);
     persist(next);

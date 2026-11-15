@@ -56,6 +56,7 @@ function Strip({ scenes, selected, onSelect }: { scenes: Scene[]; selected: stri
   };
   return (
     <div>
+      <p className="comp-sub">{t('ev.strip.cap')}</p>
       <div ref={ref} className="strip" role="group" aria-label={t('ev.strip')} onKeyDown={move}>
         {years.map(([y, list]) => (
           <div key={y} className="strip-row">

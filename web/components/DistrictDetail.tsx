@@ -125,9 +125,9 @@ function Disclosure({ title, extra, children }: { title: string; extra?: React.R
   );
 }
 
-export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack, waterAvailable, secDateOf, trackSpan, onBack, onCheck, backOnly }: {
+export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack, waterAvailable, secDateOf, trackSpan, onBack, onCheck, backOnly, backGround }: {
   d: District; rank: number; rankOf: number; tracks: string[]; track: string; onTrack: (t: string) => void; waterAvailable: boolean;
-  secDateOf: (track: string, date: string) => string | null; trackSpan: (track: string) => { start: string; end: string } | null; onBack: () => void; onCheck: (() => void) | null; backOnly?: boolean;
+  secDateOf: (track: string, date: string) => string | null; trackSpan: (track: string) => { start: string; end: string } | null; onBack: () => void; onCheck: (() => void) | null; backOnly?: boolean; backGround?: (() => void) | null;
 }) {
   const t = useT();
   const lang: Lang = useLang();
@@ -149,6 +149,7 @@ export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack
           <svg className="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           {t('back')}
         </button>
+        {backGround && <button type="button" className="btn" onClick={backGround}>{t('back.ground')}</button>}
         <div className="detail-name">
           <h2 className="dh" tabIndex={-1}>{first}</h2>
           <p className="dother">{other}</p>
@@ -188,7 +189,7 @@ export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack
       )}
       {points.length > 0 && usable != null && (
         <div className="usable">
-          <p>{t('d.usable', { p: usable })}</p>
+          <p>{t('d.usable', { scope: label(track), p: usable })}</p>
           <span className="bar"><span style={{ width: `${Math.max(0, Math.min(100, usable))}%` }} /></span>
           {usable < 50 && <p className="banner urban low" role="note"><svg className="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z M8 6.5v3.2 M8 11.6v.1" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg><span>{t('d.lowUsable', { p: usable })}</span></p>}
         </div>

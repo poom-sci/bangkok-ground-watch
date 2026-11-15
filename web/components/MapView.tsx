@@ -34,6 +34,7 @@ interface Props {
   onOverlayError: () => void;
   label: string;
   site: SiteProps | null;
+  fitKey?: number;
 }
 
 maplibregl.setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).href);
@@ -93,6 +94,17 @@ export default function MapView(p: Props) {
     if (b) map.fitBounds(b, { padding: cur.padding, maxZoom: 12.5, duration: reduceMotion() ? 0 : 600 });
   };
 
+  const fitDistricts = (duration: number): boolean => {
+    const map = mapRef.current;
+    const cur = latest.current;
+    if (!map || !cur.geo || !cur.geo.features.length || cur.site) return false;
+    const b = new maplibregl.LngLatBounds();
+    cur.geo.features.forEach((f) => { const fb = boundsOf(f); if (fb) b.extend(fb as maplibregl.LngLatBounds); });
+    if (b.isEmpty()) return false;
+    map.resize();
+    map.fitBounds(b, { padding: 24, duration });
+    return true;
+  };
   const flySite = () => {
     const map = mapRef.current;
     const f = latest.current.site?.fly;
@@ -256,7 +268,7 @@ export default function MapView(p: Props) {
       });
       ready.current = true;
       queueMicrotask(() => { if (latest.current.selected && latest.current.flyKey > 0) flyToSelected(); flySite(); });
-      if (pts.length) {
+      if (!fitDistricts(0) && pts.length) {
         const b = new maplibregl.LngLatBounds(pts[0], pts[0]);
         pts.forEach((q) => b.extend(q));
         map.fitBounds(b, { padding: first.padding, duration: 0 });
@@ -268,6 +280,10 @@ export default function MapView(p: Props) {
   }, []);
 
   useEffect(() => { sync(); });
+
+  useEffect(() => { if (p.fitKey) fitDistricts(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.fitKey]);
 
   useEffect(() => { flySite();
     // eslint-disable-next-line react-hooks/exhaustive-deps

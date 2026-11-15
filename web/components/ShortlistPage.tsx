@@ -12,7 +12,7 @@ export default function ShortlistPage({ sites, guest, onOpen, onRemove, onAdd, o
   const t = useT();
   const lang = useLang();
   const sorted = [...sites].sort((a, b) => (a.savedAt < b.savedAt ? 1 : -1));
-  if (guest || sorted.length === 0) {
+  if (sorted.length === 0) {
     return (
       <div className="empty-panel">
         <MySites sites={[]} guest={guest} onPick={onOpen} onRemove={onRemove} onAdd={onAdd} />
@@ -22,6 +22,7 @@ export default function ShortlistPage({ sites, guest, onOpen, onRemove, onAdd, o
   }
   return (
     <>
+      {guest && <p className="comp-sub guest-note">{t('sl.guestNote')}</p>}
       <div className="table-wrap">
         <table className="dtable stable">
           <thead>
@@ -32,7 +33,7 @@ export default function ShortlistPage({ sites, guest, onOpen, onRemove, onAdd, o
           <tbody>
             {sorted.map((s) => (
               <tr key={s.id}>
-                <td><span className="mono sc">{fmtNum(s.score, 0)}</span> {s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}</td>
+                <td><span className="mono sc">{fmtNum(s.score, 0)}</span> {s.urban ? <span className="grade small none">{t('rated.pill')}</span> : s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}</td>
                 <td>{s.areaName || t('nodata')}</td>
                 <td className="mono">{fmtNum(s.lat, 4)}, {fmtNum(s.lng, 4)}</td>
                 <td>{fmtDate(s.savedAt.slice(0, 10), lang) ?? t('nodata')}</td>

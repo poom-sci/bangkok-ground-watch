@@ -115,11 +115,15 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const siteHeadingRef = useRef<HTMLHeadingElement>(null);
   const handled = useRef('');
   const exampleDone = useRef(false);
+  useEffect(() => () => { handled.current = ''; exampleDone.current = false; }, []);
 
   useEffect(() => { if (profile.lang && profile.lang !== lang) setLangRaw(profile.lang); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { setUndo(null); }, [profile.key]);
+  const [fitKey, setFitKey] = useState(0);
   useEffect(() => { if (isSite || isGround) setMapShown(true); }, [isSite, isGround]);
+  useEffect(() => { if (isGround && !route.focus && mapShown) setFitKey((k) => k + 1); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGround]);
   useEffect(() => { setPopOpen(false); setPlaying(false); }, [tab]);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(false), 4000); return () => clearTimeout(id); }, [toast]);
   useEffect(() => { if (!aboutOpen && route.about) rewrite({ about: false }); }, [aboutOpen, route.about, rewrite]);
@@ -202,9 +206,10 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const ranked = useMemo(() => data.districts.filter((x) => x.index != null).sort((a, b) => (b.index ?? 0) - (a.index ?? 0)).map((x) => x.dcode), [data.districts]);
   const validD = route.d && data.districts.some((x) => x.dcode === route.d) ? route.d : null;
   const detail = validD ? data.districts.find((d) => d.dcode === validD) ?? null : null;
-  const openDistrict = (code: string) => navigate({ tab: 'districts', d: code });
+  const [fromMap, setFromMap] = useState<string | null>(null);
+  const openDistrict = (code: string) => { setFromMap(null); navigate({ tab: 'districts', d: code }); };
   const closeDistrict = () => navigate({ tab: 'districts' }, true);
-  const pickGround = (code: string) => { rewrite({ focus: code }); navigate({ tab: 'districts', d: code }); };
+  const pickGround = (code: string) => { setFromMap(code); rewrite({ focus: code }); navigate({ tab: 'districts', d: code }); };
   const centre = (code: string) => featureCentre(data.geo, code);
   const canCheckHere = (code: string) => { const c = centre(code); return !!c && (site.areas ?? []).some((a) => inBox(a.bbox, c.lat, c.lng)); };
   const checkHere = (code: string) => { const c = centre(code); if (c) navigate({ tab: 'site', lat: Number(c.lat.toFixed(5)), lng: Number(c.lng.toFixed(5)) }); };
@@ -216,12 +221,11 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
     if (site.res.s !== 'ok' || !site.pin) return null;
     const su = site.res.suit;
     if (su.score == null) return null;
-    return { id: siteId(site.pin.lat, site.pin.lng), lat: site.pin.lat, lng: site.pin.lng, areaId: su.areaId, areaName: su.areaName, score: Math.round(su.score), grade: su.grade, savedAt: new Date().toISOString() };
+    return { id: siteId(site.pin.lat, site.pin.lng), lat: site.pin.lat, lng: site.pin.lng, areaId: su.areaId, areaName: su.areaName, score: Math.round(su.score), grade: su.flags.includes('urban_flooding_not_detected') ? null : su.grade, urban: su.flags.includes('urban_flooding_not_detected'), savedAt: new Date().toISOString() };
   };
   const onSave = () => {
     const rec = record();
     if (!rec) return;
-    if (!profile.key) { setNameDialog({ title: t('save.gate'), pendingSave: true }); return; }
     store.commit(saved ? { ...profile, sites: profile.sites.filter((s) => s.id !== rec.id) } : withSite(profile, rec));
   };
   const submitName = (name: string) => {
@@ -364,7 +368,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
         <div className="map-panel">
           {mapShown && (
             <MapView layers={data.layers} current={isSite ? (overlayOn ? latestLos : null) : radar ? current : null} opacity={isSite ? 60 : opacity} mode={isSite ? 'radar' : mapView}
-              geo={data.geo} districts={data.districts} selected={focusDistrict} flyKey={flyKey} padding={padding} onSelect={pickGround} onOverlayError={() => setToast(true)} label={t('map.label')} site={siteProps} />
+              geo={data.geo} districts={data.districts} selected={focusDistrict} flyKey={flyKey} padding={padding} onSelect={pickGround} onOverlayError={() => setToast(true)} label={t('map.label')} site={siteProps} fitKey={fitKey} />
           )}
           {isSite && <div className="crosshair" role="img" aria-label={t('site.crosshair')} />}
           {isSite && overlayOn && <div className="map-legend glass"><Legend mode="radar" type="gunw" layer={latestLos} rangeMm={data.rangeMm} isNisar={data.isNisar} /></div>}
@@ -395,7 +399,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
 
   const profileNode = detail ? (
     <DistrictDetail d={detail} rank={ranked.indexOf(detail.dcode) + 1} rankOf={ranked.length} tracks={allTracks} track={track} onTrack={changeTrack} waterAvailable={waterAvailable}
-      secDateOf={secDateOf} trackSpan={trackSpan} onBack={closeDistrict} backOnly={!wide || phone} onCheck={sitingEnabled && canCheckHere(detail.dcode) ? () => checkHere(detail.dcode) : null} />
+      secDateOf={secDateOf} trackSpan={trackSpan} onBack={closeDistrict} backOnly={!wide || phone} backGround={fromMap === detail.dcode ? () => navigate({ tab: 'ground', focus: detail.dcode }) : null} onCheck={sitingEnabled && canCheckHere(detail.dcode) ? () => checkHere(detail.dcode) : null} />
   ) : null;
 
   return (
