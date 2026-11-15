@@ -1,12 +1,12 @@
 # Submission draft: Bangkok Ground Watch
 
-Draft for the NASA Space Apps 2026 project page (challenge: Dancing with the SARs). Deadline: Sunday 15 Nov 2026, 23:59 Asia/Bangkok. Everything below is English, ready to paste. Items marked TODO need a human.
+Draft for the NASA Space Apps 2026 project page (challenge: Dancing with the SARs). Deadline: Sunday 15 Nov 2026, 23:59 Asia/Bangkok. Paste only the text under each heading from "Project name" down. Before submitting: confirm the engine repository link opens in a private window; if it does not, remove that line.
 
 Project page: https://bangkok-ground-watch.vercel.app
 App: https://bangkok-ground-watch.vercel.app/app/
 Ground Pulse: https://bangkok-ground-watch.vercel.app/app/?tab=ground
 Site Scout: https://bangkok-ground-watch.vercel.app/app/?tab=site
-One district (Lat Krabang): https://bangkok-ground-watch.vercel.app/app/?mode=ground&d=1011
+One district (Lat Krabang): https://bangkok-ground-watch.vercel.app/app/?tab=districts&d=1011
 Slide deck (PDF, 7 pages): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
 
 ---
@@ -27,7 +27,7 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 
 - App: https://bangkok-ground-watch.vercel.app (project page) and https://bangkok-ground-watch.vercel.app/app/ (the app)
 - Code (web app + NISAR pipeline): https://github.com/poom-sci/bangkok-ground-watch
-- Code (site suitability engine, by a teammate): https://github.com/Thanut-Junnim26/solsat-siting (must be public before submitting; if it is not, delete this line and say in the description that the engine's code is not yet public)
+- Code (site suitability engine, by a teammate): https://github.com/Thanut-Junnim26/solsat-siting
 
 ## Detailed project description
 
@@ -48,7 +48,7 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 
 ### What we found
 
-**What the two radars agree on.** Across 485,189 non-permanent-water pixels of Bangkok, NISAR L-band HV water recurrence (19 scenes, July to November 2026) ranks land the same way as Sentinel-1 C-band flood frequency (150 scenes, 2017 to 2025): Spearman 0.72 per pixel and 0.90 across the 50 districts. NISAR saw water at least once on 94 percent of the land Sentinel-1 saw wet in 10 percent or more of wet-season passes, against 8.7 percent of land it never saw wet. Both methods threshold dark backscatter, so they share blind spots, and one NISAR season is not a flood record.
+**What the two radars agree on.** Across 485,189 non-permanent-water pixels of Bangkok, NISAR L-band HV water recurrence (19 scenes, July to November 2026) ranks land the same way as Sentinel-1 C-band wet-season flood frequency (132 wet-season scenes, 2017 to 2025): Spearman 0.72 per pixel and 0.90 across the 50 districts. NISAR saw water at least once on 94 percent of the land Sentinel-1 saw wet in 10 percent or more of wet-season passes, against 8.7 percent of land it never saw wet. Both methods threshold dark backscatter, so they share blind spots, and one NISAR season is not a flood record.
 
 **What drives the change.** In the area both NISAR tracks cover (150 km2 of cropland), cropland water fell from 32 percent on 8 July to 14 percent on 13 August and returned to 31 percent on 24 October, while built-up land stayed under 2 percent. About 62 percent (30 km2) of the cropland that was water in July read dry in August, and 70 percent of that returned by October. The surface water change inside Bangkok follows the rice season, not flooding of the city. A dry reading on cropland can mean crop canopy raising the HV backscatter, not drainage.
 
@@ -70,7 +70,7 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 - The NISAR record used is short (radar pairs from 21 June to 31 October 2026), so no yearly figure is shown.
 - The water layer also marks flooded paddies and ponds, and very smooth dry surfaces such as runways can be mistaken for water.
 - Radar can miss flooding between buildings and under vegetation. The Site Scout flags this on every affected point, and grades (good, fair, poor) are provisional. In dense inner Bangkok most points score near 100 with that flag, so the Site Scout is most useful on the city edge and open land.
-- The flood history covers 2017 to 2025 only, so earlier floods such as 2011 are not in it. The Bangkok area has not been calibrated against optical imagery (Ayutthaya and Hat Yai were).
+- The flood history covers 2017 to 2025 only, so earlier floods such as 2011 are not in it. The Bangkok area has not been calibrated against optical imagery (the engine's water rule was calibrated on flood events in Ayutthaya and Hat Yai).
 - Usable radar signal for ground change is about 98 percent in dense inner districts but only 14 to 46 percent in the rural east (Lat Krabang, Khlong Sam Wa, Nong Chok, Min Buri), and Nong Chok has no ascending-track data.
 - Everything is at about 80 m. District values are averages. Nothing here assesses a single building or site; it is a screening aid.
 - OpenStreetMap building counts depend on how completely each district is mapped. The district boundary file does not state the origin or year of its population figures.
@@ -112,7 +112,7 @@ Python (asf_search, earthaccess, h5py, numpy, pyproj, matplotlib, FastAPI, scipy
 - Poppins, Prompt, Chakra Petch, Zen Dots and Kanit (SIL Open Font License, via Google Fonts)
 - NISAR NASA SDS Algorithm Theoretical Basis Document, JPL D-95677 Rev A, and the L2 GUNW Product Specification, JPL D-102272 Rev E
 - ISCE3 (NISAR science data system software): https://github.com/isce-framework/isce3
-- MintPy: https://github.com/insarlab/MintPy
+- MintPy documentation: https://github.com/insarlab/MintPy (consulted for the phase sign convention, not used by the pipeline)
 - Overpass API: https://overpass-api.de
 - TypeScript, Microsoft Planetary Computer STAC (Sentinel-1 RTC access), Sentinel-2 cloudless by EOX IT Services GmbH (base map imagery, CC BY 4.0, contains modified Copernicus Sentinel data 2016)
 
@@ -131,7 +131,7 @@ The site suitability engine was written by a teammate in a separate repository; 
 | 4 to 11 s | Press play on the scrubber, overlay changes through the dates | 17 NISAR interferograms, June to October 2026. Ground change along the radar line of sight. |
 | 11 to 16 s | Switch to Water, then open Districts and tap one | NISAR backscatter maps surface water. 50 districts screened. |
 | 16 to 24 s | Switch to Site Scout, fly to Ayutthaya, tap Rojana, card shows 26 | Site Scout: nine years of Sentinel-1 flood history. Tap a point, get a screening score. |
-| 24 to 28 s | See the evidence, year strip with water marks, radar image | Every score shows its evidence: 130 radar passes, water in 10. |
+| 24 to 28 s | See the evidence, year strip with water marks, radar image | Every score shows its evidence: 130 wet-season radar passes, water in 10. |
 | 28 to 30 s | About the data dialog, then URL | Open data, open code. bangkok-ground-watch.vercel.app |
 
 ## Slide outline, 7 slides (alternative to the video)
