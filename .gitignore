@@ -1,0 +1,34 @@
+# Python
+.venv/
+.venv313/
+__pycache__/
+*.pyc
+
+# Raw NISAR windows read from ASF (325 MB, rebuild with nisar_fetch.py)
+nisar_out/
+
+# Pipeline overlays: the copy the web app serves lives in web/public/data/overlays
+app/data/overlays/
+
+# Web build output and local tooling
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+web/screenshots/
+.vercel/
+.claude-tmp
+.DS_Store
+
+# Separate repository (site suitability engine by a teammate), not part of this one
+solsat-siting/
+
+# Internal working notes
+HANDOFF.md
+SUBMISSION.md
+
+# Never commit credentials
+.env
+.env.local
+.netrc

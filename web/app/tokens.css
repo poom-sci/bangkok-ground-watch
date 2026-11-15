@@ -1,0 +1,53 @@
+/* Every visual value lives here. Components and layout CSS use only these variables. */
+:root {
+  --bg: #E8ECF1;
+  --surface: #EEF1F6;
+  --surface-glass: rgba(238,241,246,.94);
+  --text: #1B2230;
+  --muted: #475066;
+  --edge: #6F798B;
+  --accent: #0B6E6E;
+  --accent-ink: #FFFFFF;
+  --focus: #0A4FBF;
+  --ok-bg: #DDF1E4; --ok-ink: #14572F;
+  --demo-bg: #FFF1D6; --demo-ink: #7A4300;
+  --bad-bg: #FBE3E0; --bad-ink: #8A1C12;
+  --sh-dark: #C3C9D4; --sh-light: #FFFFFF;
+  --raised: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light);
+  --raised-sm: 3px 3px 8px var(--sh-dark), -3px -3px 8px var(--sh-light);
+  --inset: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light);
+  --r-ctl: 12px; --r-card: 20px; --r-pill: 999px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --font: var(--font-plex-thai), "IBM Plex Sans Thai", system-ui, sans-serif;
+  --mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  --t-cap: 12px; --t-sm: 14px; --t-body: 15px; --t-h3: 18px; --t-h2: 22px; --t-h1: 22px;
+  --lh: 1.6; --ease: cubic-bezier(.2,.8,.2,1); --dur: 160ms;
+
+  /* additions: values the spec states in prose */
+  --glass-border: rgba(27,34,48,.12);
+  --glass-blur: 12px;
+  --t-big: 28px;
+  --t-display: 32px;
+  --land-max: 1120px; --land-gap: 56px; --hero-shot: 7;
+  --t-h1-phone: 17px;
+  --t-index: 18px;
+  --ctl-h: 44px;
+  --thumb: 24px;
+  --track-h: 8px;
+  --bar-h: 4px;
+  --sw: 20px;
+  --scrim: rgba(27,34,48,.45);
+  --los-0: #3B4CC0; --los-25: #8DB0FE; --los-50: #DDDDDD; --los-75: #F49A7B; --los-100: #B40426;
+  --water: rgb(0,140,255); --water-a: .65;
+  --ramp-1: #E3F0EF; --ramp-2: #A9D3D0; --ramp-3: #5FA8A4; --ramp-4: #2F8885; --ramp-5: #0B6E6E;
+  --ramp-opacity: .8;
+  --hatch: #9AA3B2;
+  --outline: rgba(255,255,255,.7);
+  --card-w: 264px; --panel-w: 320px; --scrub-w: 480px; --dock-w: 480px; --drawer-w: 320px;
+  --dock-h: 196px;
+  --pin: 20px; --pin-ring: 3px; --area-fill-a: .1; --area-line: 2px; --mark-w: 10px; --mark-h: 16px; --mark-dot: 6px; --thumb-img: 72px; --card-w-ev: 440px;
+}
+@media (min-width: 768px) { :root { --t-h1: 22px; --t-display: 44px; --land-gap: 96px; } }
+@media (min-width: 1024px) { :root { --t-h1: 28px; } }
+@media (min-width: 1280px) { :root { --card-w: 296px; --panel-w: 360px; } }
+@media (min-width: 1440px) { :root { --scrub-w: 560px; } }

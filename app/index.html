@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bangkok Ground Watch · NISAR</title>
+<link rel="icon" href="data:,">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;font:14px/1.4 system-ui,-apple-system,"Sukhumvit Set",sans-serif}
+  #map{position:absolute;inset:0}
+  #panel{position:absolute;top:12px;left:12px;width:338px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);overflow:auto;
+         box-sizing:border-box;background:#fffffff2;border-radius:10px;padding:12px 14px;box-shadow:0 2px 12px #0003}
+  .hd{display:flex;align-items:center;gap:6px}
+  .hd h1,.hd h2{flex:1;margin:0}
+  .hd button{padding:2px 8px;font-size:12px;min-width:34px;min-height:28px}
+  .hd .tog{font-size:16px;line-height:1}
+  .min>.c{display:none!important}
+  .mo{display:none}
+  #panel h1{font-size:16px}
+  #panel .sub{color:#555;font-size:12px;margin:2px 0 10px}
+  label{display:block;font-size:12px;color:#444;margin:8px 0 2px}
+  select,input[type=range]{width:100%}
+  .row{display:flex;gap:8px;align-items:center}
+  button{padding:4px 10px;cursor:pointer}
+  #legend{margin-top:10px;font-size:12px}
+  #bar{height:10px;border-radius:5px;background:linear-gradient(90deg,#3b4cc0,#dddddd,#b40426)}
+  #bar+div{display:flex;justify-content:space-between;color:#555}
+  #stats{margin-top:8px;font-size:12px;color:#333}
+  #banner{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#b45309;color:#fff;
+          padding:8px 14px;border-radius:8px;font-weight:600;display:none;max-width:90%;text-align:center;box-sizing:border-box}
+  #note{margin-top:8px;font-size:11px;color:#666}
+  #dpanel{position:absolute;top:12px;right:12px;width:340px;max-width:calc(100% - 24px);max-height:calc(100% - 70px);display:none;
+          flex-direction:column;background:#fffffff2;border-radius:10px;padding:12px 14px;box-shadow:0 2px 12px #0003;box-sizing:border-box}
+  #dpanel>*{flex-shrink:0}
+  #dpanel h2{font-size:14px}
+  #dsrc{display:inline-block;font-size:11px;font-weight:600;color:#fff;border-radius:4px;padding:1px 6px;margin:4px 0}
+  #dwrap{overflow:auto;margin-top:8px;flex:1 1 auto;min-height:80px}
+  #dtable{border-collapse:collapse;width:100%;font-size:12px}
+  #dtable th{position:sticky;top:0;background:#fff;text-align:left;color:#555;font-weight:600}
+  #dtable td,#dtable th{padding:3px 4px;border-bottom:1px solid #eee}
+  #dtable td.n,#dtable th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #dtable tr{cursor:pointer} #dtable tr.sel td{background:#fde68a}
+  #dtable tr.nd td{color:#999}
+  #ddetail{font-size:12px;border-top:1px solid #ddd;margin-top:8px;padding-top:8px;max-height:32vh;overflow:auto}
+  #ddetail table{border-collapse:collapse;width:100%} #ddetail td,#ddetail th{padding:2px 4px;text-align:right;border-bottom:1px solid #eee}
+  #ddetail th:first-child,#ddetail td:first-child{text-align:left}
+  #dbar{height:8px;border-radius:4px;background:linear-gradient(90deg,#fff5eb,#fd8d3c,#7f2704);margin-top:6px}
+  #dbar+div{display:flex;justify-content:space-between;color:#555;font-size:11px}
+  #dnote{font-size:11px;color:#666;margin-top:6px}
+  @media (max-width:760px){
+    #panel{top:8px;left:8px;right:8px;width:auto;max-width:none;max-height:calc(100% - 16px)}
+    #dpanel{top:auto;bottom:8px;right:8px;left:8px;width:auto;max-width:none;max-height:50%;overflow:auto}
+    .bn #dpanel{bottom:48px}
+    #dwrap{flex:none;max-height:132px}
+    #ddetail{max-height:none}
+    #banner{left:0;right:0;bottom:0;transform:none;max-width:none;border-radius:0;font-size:12px;padding:5px 8px}
+    .maplibregl-ctrl-bottom-left{display:none}
+    .mo{display:block}
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <div class="hd"><h1>Bangkok Ground Watch</h1><button id="lang" aria-label="Language">EN</button><button class="tog" aria-label="Collapse or expand">▴</button></div>
+  <div class="sub c" data-i="sub"></div>
+  <label for="type" class="c" data-i="lType"></label>
+  <select id="type" class="c"></select>
+  <label for="track" class="c" data-i="lTrack"></label>
+  <select id="track" class="c"></select>
+  <label><span data-i="lDate"></span>: <b id="dateLabel"></b></label>
+  <div class="row c"><button id="play">▶</button><input type="range" id="date" min="0" max="0" value="0" aria-label="Date"></div>
+  <label for="opacity" class="c" data-i="lOpacity"></label>
+  <input type="range" id="opacity" class="c" min="0" max="100" value="80">
+  <div id="legend"></div>
+  <div id="stats" class="c"></div>
+  <div id="note" class="c"></div>
+  <div class="mo c" style="font-size:11px;color:#666;margin-top:6px">© OpenStreetMap contributors · MapLibre</div>
+</div>
+<div id="dpanel">
+  <div class="hd"><h2 data-i="dTitle"></h2><button class="tog" aria-label="Collapse or expand">▴</button></div>
+  <div><span id="dsrc"></span></div>
+  <div class="row c"><select id="dmetric" aria-label="District metric"></select>
+    <label style="margin:0;white-space:nowrap"><input type="checkbox" id="dshow" checked> <span data-i="dShow"></span></label></div>
+  <div id="dbar" class="c"></div><div class="c"><span id="dmin"></span><span id="dmax"></span></div>
+  <div id="dwrap" class="c"><table id="dtable"><thead><tr><th>#</th><th data-i="colDistrict"></th><th class="n" id="dcol"></th></tr></thead><tbody></tbody></table></div>
+  <div id="ddetail" class="c"></div>
+  <div id="dnote" class="c"></div>
+</div>
+<div id="banner"></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+// ---- UI strings: Thai by default, English through the toggle or ?lang=en (flip the default on the next line) ----
+const I18N = {
+  th: {
+    sub: 'NISAR L-band · การเปลี่ยนแปลงผิวดินกรุงเทพและปริมณฑล',
+    lType: 'เลเยอร์', lTrack: 'เส้นทางโคจร (track)', lDate: 'วันที่', lOpacity: 'ความทึบของเลเยอร์', noData: 'ไม่มีข้อมูล',
+    ty_gunw: 'การเปลี่ยนระยะตามแนวสายตา LOS (GUNW)', ty_gcov: 'ความเข้มสะท้อนกลับ dB (GCOV)', ty_water: 'พื้นที่น้ำ (เกณฑ์ backscatter, GCOV)',
+    ty_gcov_ql: 'NISAR GCOV · ภาพ preview สีผสม (ข้อมูลจริงจาก ASF)', ty_gunw_ql: 'NISAR GUNW · ภาพ preview interferogram (ข้อมูลจริงจาก ASF)',
+    asc: 'ขาขึ้น', desc: 'ขาลง',
+    sRange: 'ช่วงค่า (p2 ถึง p98): {0} ถึง {1} mm', sCoh: 'พื้นที่ coherent: {0}%', sWater: 'น้ำ: {0}% ของพื้นที่ที่มีข้อมูล', sThr: 'เกณฑ์น้ำ: {0} dB',
+    sBorrowed: 'ตำแหน่งภาพใช้มุมภาพของเฟรมเดียวกัน (ภาพนี้ไม่มีไฟล์ KML ใน ASF)',
+    legWater: 'พื้นที่ที่ backscatter ต่ำกว่าเกณฑ์ (น่าจะเป็นน้ำ)', legGcovQl: 'ภาพสีผสมจากข้อมูลโพลาไรเซชัน (preview ของ ASF) ไม่ใช่ค่า dB',
+    legGunwQl: 'สีวนซ้ำ (fringe) = การเปลี่ยนระยะตามแนวสายตา (preview ของ ASF)', legGcov: 'ระดับเทา = backscatter (dB) ยืดตามช่วง p2 ถึง p98 ของแต่ละภาพ',
+    noteGunw: 'LOS = การเปลี่ยนระยะตามแนวสายตาดาวเทียมระหว่างสองวันถ่ายภาพ สมมติว่าค่าบวก = ระยะเพิ่ม (ห่างจากดาวเทียม) ซึ่งตรงกับการคำนวณและแบบ ISCE/HyP3 แต่ยังไม่ได้ยืนยันกับ spec ของ NISAR GUNW จึงควรอ่านเครื่องหมายอย่างระมัดระวัง ค่าเทียบกับค่าเฉลี่ยของกรอบภาพ ลบ ramp ระนาบแล้ว (อาจลบสัญญาณระดับภูมิภาคออกด้วย) และยังไม่ได้แยกผลบรรยากาศ',
+    noteWater: 'เกณฑ์เลือกอัตโนมัติด้วย Otsu อาจผิดพลาดบริเวณนาข้าวน้ำขังหรือเงาเรดาร์ ควรตรวจกับภาพถ่ายแสง',
+    noteGcovQl: 'น้ำมืด เมืองสว่างหรือม่วง ก้อนสีเรืองแสงที่เห็นบางภาพน่าจะเป็นสิ่งรบกวน (เช่น ไอโอโนสเฟียร์หรือสัญญาณรบกวน) ยังไม่ยืนยัน ใช้ดูภาพรวมได้ แต่ยังคำนวณปริมาณจากภาพนี้ไม่ได้',
+    noteGunwQl: 'ภาพ fringe มี ramp กว้างจากวงโคจรและบรรยากาศ บริเวณที่เป็นจุดสุ่ม (noise) คือ coherence ต่ำ ยังไม่ใช่ค่าเป็น มม. ใช้เทียบเชิงคุณภาพเท่านั้น',
+    bDemo: 'DEMO · ข้อมูลสังเคราะห์ ไม่ใช่ข้อมูลจริง',
+    bLive: 'โหมดสด: ภาพ preview ของ NISAR จาก ASF (ข้อมูลจริง แต่ไม่ใช่ค่าเชิงปริมาณ)',
+    bFallback: 'ไม่พบข้อมูลและเชื่อมต่อ ASF ไม่ได้ จึงแสดงข้อมูลสังเคราะห์ (DEMO) ไม่ใช่ข้อมูลจริง',
+    dTitle: 'คัดกรองรายเขต (50 เขต กทม.)', dReal: 'ค่าจาก NISAR ที่ประมวลผลแล้ว', dDemo: 'DEMO · ค่าสังเคราะห์ ไม่ใช่ข้อมูลจริง',
+    dNone: 'ยังไม่มีค่า NISAR รายเขต · แสดงเฉพาะประชากร', dShow: 'แสดงบนแผนที่', colDistrict: 'เขต',
+    m_index: 'ดัชนีคัดกรอง (0-100)', m_water_max_pct: 'สัดส่วนพื้นที่น้ำสูงสุด (%)', m_los_abs_mm: '|การเปลี่ยน LOS รวม| (mm)',
+    m_pop_density: 'ความหนาแน่นประชากร (คน/ตร.กม.)', m_bld_density: 'ความหนาแน่นอาคาร OSM (หลัง/ตร.กม.)',
+    dHint: 'คลิกเขตในตารางหรือบนแผนที่เพื่อดูรายละเอียด',
+    dNoteNone: 'โหมดนี้ไม่มีค่าพื้นที่น้ำและ LOS รายเขต (ต้องรัน district_stats.py กับข้อมูลที่ประมวลผลแล้ว) จึงแสดงเฉพาะประชากร. ',
+    dNoteIdx: 'ดัชนี = ค่าเฉลี่ยอันดับเปอร์เซ็นไทล์ของตัวชี้วัดที่มีข้อมูล (สัดส่วนน้ำสูงสุด, |LOS รวม|, ความหนาแน่นประชากร) ใช้จัดลำดับเขตเพื่อคัดกรองเท่านั้น ไม่ได้บอกสภาพของอาคารรายหลัง. ',
+    dNoteNoWater: 'ตอนนี้ยังไม่มีค่าน้ำจาก GCOV ดัชนีจึงใช้เฉพาะ LOS และประชากร. ',
+    dNoteSrc: 'ขอบเขตและประชากรมาจากไฟล์ขอบเขตเขต (ไม่ระบุปีของข้อมูลประชากร)',
+    area: 'พื้นที่ {0} ตร.กม.', pop: 'ประชากร {0} คน', bld: 'อาคาร OSM {0} หลัง', bldNone: 'อาคาร OSM ยังไม่ได้นับ', idx: 'ดัชนีคัดกรอง {0}',
+    thWaterDate: 'วันที่ (GCOV)', thWaterPct: 'น้ำ %', thPair: 'คู่ภาพ (GUNW)', thLos: 'LOS เฉลี่ย mm',
+    losSum: 'LOS รวมต่อ track: {0} · เทียบกับค่าเฉลี่ยทั้งกรอบภาพ ไม่ใช่ค่าสัมบูรณ์',
+    noWater: 'พื้นที่น้ำ (GCOV): ไม่มีข้อมูล', noLos: 'LOS (GUNW): ไม่มีข้อมูล', popOnly: 'โหมดนี้แสดงเฉพาะประชากร ไม่มีค่า NISAR รายเขต'
+  },
+  en: {
+    sub: 'NISAR L-band · surface change over Bangkok and vicinity',
+    lType: 'Layer', lTrack: 'Orbit track', lDate: 'Date', lOpacity: 'Layer opacity', noData: 'No data',
+    ty_gunw: 'Line-of-sight (LOS) change (GUNW)', ty_gcov: 'Backscatter dB (GCOV)', ty_water: 'Water extent (backscatter threshold, GCOV)',
+    ty_gcov_ql: 'NISAR GCOV · colour composite preview (real data from ASF)', ty_gunw_ql: 'NISAR GUNW · interferogram preview (real data from ASF)',
+    asc: 'Ascending', desc: 'Descending',
+    sRange: 'Value range (p2 to p98): {0} to {1} mm', sCoh: 'Coherent area: {0}%', sWater: 'Water: {0}% of the area with data', sThr: 'Water threshold: {0} dB',
+    sBorrowed: 'Placed with the corners of another scene in the same frame (ASF has no KML for this one)',
+    legWater: 'Backscatter below the threshold (likely water)', legGcovQl: 'Polarisation colour composite (ASF preview), not dB values',
+    legGunwQl: 'Repeating colour fringes = change in line-of-sight range (ASF preview)', legGcov: 'Grey level = backscatter (dB), stretched to each image\'s p2 to p98 range',
+    noteGunw: 'LOS = change in satellite line-of-sight range between the two acquisition dates. Positive is assumed to mean range increase (away from the satellite). That matches the derivation and the ISCE/HyP3 convention, but it is not confirmed against the NISAR GUNW product spec, so read the sign with care. Values are relative to the frame mean, a planar ramp was removed (this can also remove regional signal) and the atmosphere is not corrected.',
+    noteWater: 'Threshold picked automatically (Otsu). It can fail on flooded paddies and radar shadow; check against optical imagery.',
+    noteGcovQl: 'Water is dark, built-up areas bright or purple. Glowing colour blobs in some scenes are probably artefacts (for example ionosphere or interference), not confirmed. Good for an overview; quantities cannot be computed from this picture.',
+    noteGunwQl: 'Fringes include a broad ramp from orbit and atmosphere. Random speckle means low coherence. These are not mm values; use for qualitative comparison only.',
+    bDemo: 'DEMO · synthetic data, not real measurements',
+    bLive: 'Live mode: NISAR browse previews from ASF (real data, but pictures, not quantitative values)',
+    bFallback: 'No data found and ASF is unreachable. Showing synthetic data (DEMO), not real measurements',
+    dTitle: 'District screening (50 Bangkok districts)', dReal: 'Processed NISAR values', dDemo: 'DEMO · synthetic values, not real data',
+    dNone: 'No per-district NISAR values · population only', dShow: 'Show on map', colDistrict: 'District',
+    m_index: 'Screening index (0-100)', m_water_max_pct: 'Max water share (%)', m_los_abs_mm: '|Summed LOS change| (mm)',
+    m_pop_density: 'Population density (people/km²)', m_bld_density: 'OSM building density (buildings/km²)',
+    dHint: 'Click a district in the table or on the map for details',
+    dNoteNone: 'This mode has no per-district water or LOS values (district_stats.py must be run on processed data), so only population is shown. ',
+    dNoteIdx: 'Index = mean percentile rank of the indicators that have data (max water share, |summed LOS|, population density). It orders districts for screening only and says nothing about individual buildings. ',
+    dNoteNoWater: 'No GCOV water values yet, so the index currently uses LOS and population only. ',
+    dNoteSrc: 'Boundaries and population come from the district boundary file (population year not stated).',
+    area: 'Area {0} km²', pop: 'Population {0}', bld: 'OSM buildings {0}', bldNone: 'OSM buildings not counted', idx: 'Screening index {0}',
+    thWaterDate: 'Date (GCOV)', thWaterPct: 'Water %', thPair: 'Pair (GUNW)', thLos: 'Mean LOS mm',
+    losSum: 'Summed LOS per track: {0} · relative to the frame mean, not absolute',
+    noWater: 'Water extent (GCOV): no data', noLos: 'LOS (GUNW): no data', popOnly: 'This mode shows population only, no per-district NISAR values'
+  }
+};
+const Q = new URLSearchParams(location.search);
+let lang = 'th';
+try { const v = Q.get('lang') || localStorage.getItem('bgw-lang'); if (v === 'th' || v === 'en') lang = v; } catch (e) {}
+const t = (k, ...a) => { let s = I18N[lang][k] ?? I18N.en[k] ?? k; a.forEach((v, i) => { s = s.replace('{' + i + '}', v); }); return s; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = id => document.getElementById(id);
+// number for display; never prints NaN / null / undefined
+const num = (v, d) => v == null || v === '' || !isFinite(v) ? t('noData')
+  : Number(v).toLocaleString('en-US', d == null ? {} : { minimumFractionDigits: d, maximumFractionDigits: d });
+const mobile = () => innerWidth <= 760;
+let layers = [], cur = [], idx = 0, timer = null, rangeMm = 20, bn = null, ready = false;
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: { version: 8,
+    sources: { osm: { type: 'raster', tileSize: 256, attribution: '© OpenStreetMap contributors',
+                      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'] } },
+    layers: [{ id: 'osm', type: 'raster', source: 'osm' }] },
+  center: [100.5, 13.7], zoom: 8.5
+});
+map.addControl(new maplibregl.NavigationControl(), 'bottom-left');
+
+function banner(key, bg) {
+  bn = [key, bg]; const b = $('banner'); b.textContent = t(key); b.style.background = bg || '#b45309'; b.style.display = 'block';
+  document.body.classList.add('bn');
+}
+function setMin(p, on) { p.classList.toggle('min', on); const b = p.querySelector('.tog'); b.textContent = on ? '▾' : '▴'; b.setAttribute('aria-expanded', String(!on)); }
+document.querySelectorAll('.tog').forEach(b => { b.onclick = () => { const p = b.closest('#panel,#dpanel'); setMin(p, !p.classList.contains('min')); }; });
+if (mobile()) { setMin($('panel'), true); setMin($('dpanel'), true); }  // phones start with the map visible; both panels open on tap
+
+// ---- synthetic demo data (clearly labelled; NOT real measurements) ----
+function makeDemo() {
+  const bounds = [[100.20, 13.90], [100.80, 13.90], [100.80, 13.40], [100.20, 13.40]];
+  const mk = (amp, kind) => {
+    const c = document.createElement('canvas'); c.width = c.height = 200;
+    const g = c.getContext('2d'), im = g.createImageData(200, 200);
+    for (let y = 0; y < 200; y++) for (let x = 0; x < 200; x++) {
+      const i = 4 * (y * 200 + x);
+      const bowl = Math.exp(-(((x - 70) / 30) ** 2 + ((y - 130) / 26) ** 2));
+      if (kind === 'water') { const w = (x > 120 && y > 140); im.data.set([30, 140, 255, w ? 160 : 0], i); }
+      else { const t = Math.min(1, bowl * amp / 20); im.data.set([221 - 41 * t, 221 - 217 * t, 221 - 183 * t, 210 * Math.max(t, .05)], i); }  // red = away from satellite
+    }
+    g.putImageData(im, 0, 0); return c.toDataURL();
+  };
+  const L = [];
+  [['2026-09-25', 6], ['2026-10-07', 10], ['2026-10-19', 15]].forEach(([d, a]) => {
+    L.push({ type: 'gunw', date: d, track: 'A112', image: mk(a, 'gunw'), bounds, stats: { p2_mm: -1, p98_mm: a } });
+    L.push({ type: 'water', date: d, track: 'A112', image: mk(0, 'water'), bounds, stats: { water_pct: 8 } });
+  });
+  return { display_range_mm: 20, layers: L };
+}
+
+// ---- live mode: public ASF browse images (no login). Real NISAR data, but 8-bit previews, not calibrated values ----
+async function liveManifest() {
+  const api = 'https://api.daac.asf.alaska.edu/services/search/param?dataset=NISAR&processingLevel=GCOV,GUNW' +
+              '&intersectsWith=POINT(100.5%2013.75)&start=2026-06-01T00:00:00Z&maxResults=300&output=jsonlite';
+  const rows = JSON.parse(await (await fetch(api)).text()).results || [];
+  const seen = new Map();
+  for (const r of rows) {
+    if (!r.browse || !r.startTime || (r.productType !== 'GCOV' && r.productType !== 'GUNW')) continue;
+    const png = r.browse.find(u => /_LATLON\.png$/.test(u));
+    if (!png) continue;
+    const track = String(r.flightDirection || '?')[0] + r.path;
+    const type = r.productType === 'GCOV' ? 'gcov_ql' : 'gunw_ql';
+    const date = r.startTime.slice(0, 10);
+    seen.set(type + track + date, { type, date, track, image: png, kml: png.replace(/\.png$/, '.kml'), file: r.fileName, frame: r.frame, stats: {} });
+  }
+  const L = [...seen.values()];
+  await Promise.all(L.map(async x => {
+    try {
+      const t = await (await fetch(x.kml)).text();
+      const c = t.match(/<coordinates>([^<]+)<\/coordinates>/)[1].trim().split(/\s+/).map(s => s.split(',').map(Number));
+      x.bounds = [c[3], c[2], c[1], c[0]];  // KML LatLonQuad = LL, LR, UR, UL -> MapLibre wants TL, TR, BR, BL
+    } catch (e) { x.bounds = null; }
+  }));
+  // ASF has no KML for most scenes. NISAR L2 frames sit on a fixed grid, so borrow the corners of a scene from the same track and frame
+  L.filter(x => !x.bounds).forEach(x => {
+    const ok = o => o.bounds && !o.borrowed && o.track === x.track && o.frame === x.frame;
+    const y = L.find(o => ok(o) && o.type === x.type) || L.find(ok);
+    if (y) { x.bounds = y.bounds; x.borrowed = true; }
+  });
+  return { display_range_mm: 20, layers: L.filter(x => x.bounds) };
+}
+
+const isSynthetic = j => !!(j && (j.demo || /demo|synth/i.test(j.source || '')));
+async function loadManifest() {  // mode: 'manifest' (processed values) | 'live' (ASF previews) | 'demo' (synthetic)
+  if (Q.has('demo')) { banner('bDemo'); return { m: makeDemo(), mode: 'demo' }; }
+  if (!Q.has('live')) {
+    try {
+      const r = await fetch('data/manifest.json', { cache: 'no-cache' });
+      const m = r.ok ? await r.json() : null;
+      if (m && Array.isArray(m.layers) && m.layers.length) {
+        if (isSynthetic(m)) { banner('bDemo'); return { m, mode: 'demo', files: true }; }
+        return { m, mode: 'manifest' };
+      }
+    } catch (e) {}
+  }
+  try {
+    const m = await liveManifest();
+    if (m.layers.length) { banner('bLive', '#1d4ed8'); return { m, mode: 'live' }; }
+  } catch (e) { console.warn('live mode failed', e); }
+  banner('bFallback');
+  return { m: makeDemo(), mode: 'demo' };
+}
+
+const trackLabel = k => { const d = k[0] === 'A' ? t('asc') : k[0] === 'D' ? t('desc') : null; return d ? `${d} · path ${k.slice(1)}` : k; };
+function fillTypes() {
+  const order = ['gunw', 'water', 'gcov', 'gcov_ql', 'gunw_ql'], keep = $('type').value;
+  const types = [...new Set(layers.map(L => L.type))].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  $('type').innerHTML = types.map(k => `<option value="${esc(k)}">${esc(I18N[lang]['ty_' + k] || k)}</option>`).join('');
+  if (types.includes(keep)) $('type').value = keep;
+}
+function refresh() {
+  const ty = $('type').value, prev = cur[idx] && cur[idx].date;
+  const tracks = [...new Set(layers.filter(L => L.type === ty).map(L => L.track))].sort();  // only tracks that have this layer type
+  const k = tracks.includes($('track').value) ? $('track').value : tracks[0];
+  $('track').innerHTML = tracks.map(x => `<option value="${esc(x)}">${esc(trackLabel(x))}</option>`).join('');
+  if (k) $('track').value = k;
+  cur = layers.filter(L => L.type === ty && L.track === k).sort((a, b) => a.date < b.date ? -1 : 1);
+  const same = cur.findIndex(L => L.date === prev);  // keep the date when the other track / layer also has it
+  idx = same >= 0 ? same : cur.length - 1;
+  $('date').max = Math.max(0, cur.length - 1); $('date').value = Math.max(0, idx);
+  $('date').disabled = $('play').disabled = cur.length < 2;
+  if (cur.length < 2 && timer) $('play').onclick();
+  legend(ty); show();
+}
+function ensure(L) {  // add the image source only when first shown (live mode images are 3-4 MB each)
+  if (L._added) return; L._added = true;
+  map.addSource(L._id, { type: 'image', url: L._src, coordinates: L.bounds });
+  map.addLayer({ id: L._id, type: 'raster', source: L._id,
+    paint: { 'raster-opacity': 0, 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } },
+    map.getLayer('dist-fill') ? 'dist-fill' : undefined);  // keep district outlines above the rasters
+}
+function show() {
+  layers.forEach(L => { if (L._added) map.setPaintProperty(L._id, 'raster-opacity', 0); });
+  const L = cur[idx]; if (!L) { $('dateLabel').textContent = t('noData'); $('stats').textContent = ''; return; }
+  ensure(L);
+  map.setPaintProperty(L._id, 'raster-opacity', $('opacity').value / 100);
+  $('dateLabel').textContent = L.date + (cur.length > 1 ? ` · ${idx + 1}/${cur.length}` : '');
+  const s = L.stats || {}, bits = [];
+  if (s.p2_mm != null && s.p98_mm != null) bits.push(t('sRange', num(s.p2_mm), num(s.p98_mm)));
+  if (s.coherent_pct != null) bits.push(t('sCoh', num(s.coherent_pct)));
+  if (s.water_pct != null) bits.push(t('sWater', num(s.water_pct)));
+  if (L.threshold_db != null) bits.push(t('sThr', num(L.threshold_db)) + (L.pol ? ` (${esc(L.pol)})` : ''));
+  if (L.borrowed) bits.push(t('sBorrowed'));
+  if (L.file) bits.push(`<small style="word-break:break-all;color:#666">${esc(L.file)}</small>`);
+  $('stats').innerHTML = bits.join('<br>');
+}
+function legend(ty) {
+  $('legend').innerHTML = ty === 'gunw'
+    ? `<div id="bar"></div><div><span>−${rangeMm} mm</span><span>0</span><span>+${rangeMm} mm</span></div>`
+    : ty === 'water' ? '<span style="color:#1e8cff">■</span> ' + t('legWater')
+    : ty === 'gcov_ql' ? t('legGcovQl') : ty === 'gunw_ql' ? t('legGunwQl') : ty === 'gcov' ? t('legGcov') : '';
+  $('note').textContent = ty === 'gunw' ? t('noteGunw') : ty === 'water' ? t('noteWater')
+    : ty === 'gcov_ql' ? t('noteGcovQl') : ty === 'gunw_ql' ? t('noteGunwQl') : '';
+}
+
+// ---- district screening layer ----
+const METRICS = {
+  index:         v => num(v, 0),
+  water_max_pct: v => num(v, 1),
+  los_abs_mm:    v => num(v, 1),
+  pop_density:   v => num(Math.round(v)),
+  bld_density:   v => num(Math.round(v))
+};
+let DG = null, DR = {}, dSel = null, dMode = 'none';
+function demoDistricts(feats) {  // synthetic values tied to the demo overlay; NOT measurements
+  const rows = feats.map(f => {
+    const p = f.properties, ring = f.geometry.coordinates[0];
+    const cx = ring.reduce((a, c) => a + c[0], 0) / ring.length, cy = ring.reduce((a, c) => a + c[1], 0) / ring.length;
+    const bowl = Math.exp(-(((cx - 100.41) / 0.09) ** 2 + ((cy - 13.575) / 0.065) ** 2));
+    const wet = Math.max(0, Math.min(1, (cx - 100.56) / 0.3)) * Math.max(0, Math.min(1, (13.75 - cy) / 0.25));
+    const water = [['2026-09-25', .6], ['2026-10-07', 1]].map(([date, k]) => ({ date, track: 'A112', pct: +(1 + 30 * wet * k).toFixed(1), cover_pct: 100 }));
+    const los = [['2026-09-25', 6], ['2026-10-07', 10], ['2026-10-19', 15]].map(([date, a]) => ({ date, track: 'A112', mean_mm: +(a * bowl).toFixed(1), coherent_pct: 70 }));
+    const sum = +los.reduce((a, x) => a + x.mean_mm, 0).toFixed(1);
+    return { ...p, buildings: null, water, los, water_max_pct: Math.max(...water.map(w => w.pct)), los_sum_mm: { A112: sum }, los_abs_mm: Math.abs(sum),
+             pop_density: Math.round(p.pop / p.area_km2), bld_density: null };
+  });
+  const rank = k => { const v = rows.map(r => r[k]).sort((a, b) => a - b); return r => 100 * v.indexOf(r[k]) / (v.length - 1); };
+  const rk = ['water_max_pct', 'los_abs_mm', 'pop_density'].map(rank);
+  rows.forEach(r => { r.index = +(rk.reduce((a, f) => a + f(r), 0) / 3).toFixed(1); });
+  return rows;
+}
+async function loadDistricts(mode, files) {
+  try { const r = await fetch('data/bkk_districts.geojson'); if (!r.ok) return; DG = await r.json(); } catch (e) { return; }
+  let rows = null;
+  if (mode === 'demo' && !files) { rows = demoDistricts(DG.features); dMode = 'demo'; }
+  else if (mode !== 'live') {  // live previews are pictures, so the panel must not show per-district NISAR values next to them
+    try {
+      const r = await fetch('data/districts.json', { cache: 'no-cache' });
+      const j = r.ok ? await r.json() : null;
+      if (j && Array.isArray(j.districts) && j.districts.length) { rows = j.districts; dMode = mode === 'demo' || isSynthetic(j) ? 'demo' : 'real'; }
+    } catch (e) {}
+  }
+  DG.features.forEach(f => {  // every district gets a row, even when the stats file misses it
+    const p = f.properties;
+    DR[p.dcode] = { ...p, water: [], los: [], pop_density: p.pop && p.area_km2 ? Math.round(p.pop / p.area_km2) : null };
+  });
+  (rows || []).forEach(r => { if (DR[r.dcode]) Object.keys(r).forEach(k => { if (r[k] != null) DR[r.dcode][k] = r[k]; }); });
+  map.addSource('dist', { type: 'geojson', data: DG, promoteId: 'dcode' });
+  map.addLayer({ id: 'dist-fill', type: 'fill', source: 'dist', paint: { 'fill-color': '#ccc', 'fill-opacity': 0.55 } });
+  map.addLayer({ id: 'dist-line', type: 'line', source: 'dist',
+    paint: { 'line-color': ['case', ['boolean', ['feature-state', 'sel'], false], '#111', '#666'], 'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 3, 0.6] } });
+  map.on('click', 'dist-fill', e => { if (e.features[0]) selectDistrict(e.features[0].properties.dcode, false); });
+  map.on('mouseenter', 'dist-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'dist-fill', () => { map.getCanvas().style.cursor = ''; });
+  $('dpanel').style.display = 'flex';
+  $('dmetric').onchange = drawDistricts;
+  $('dshow').onchange = e => ['dist-fill', 'dist-line'].forEach(id => map.setLayoutProperty(id, 'visibility', e.target.checked ? 'visible' : 'none'));
+  districtTexts(); drawDistricts();
+}
+function districtTexts() {
+  const rows = Object.values(DR), src = $('dsrc'), keep = $('dmetric').value;
+  src.textContent = t(dMode === 'real' ? 'dReal' : dMode === 'demo' ? 'dDemo' : 'dNone');
+  src.style.background = dMode === 'real' ? '#15803d' : dMode === 'demo' ? '#b45309' : '#6b7280';
+  const avail = Object.keys(METRICS).filter(k => rows.some(r => r[k] != null));
+  $('dmetric').innerHTML = avail.map(k => `<option value="${k}">${esc(t('m_' + k))}</option>`).join('');
+  if (avail.includes(keep)) $('dmetric').value = keep;
+  $('dnote').textContent = (dMode === 'none' ? t('dNoteNone')
+    : t('dNoteIdx') + (rows.some(r => r.water_max_pct != null) ? '' : t('dNoteNoWater'))) + t('dNoteSrc');
+  if (!dSel) $('ddetail').textContent = t('dHint');
+}
+const dName = (r, short) => { const th = short ? r.name_th.replace(/^เขต/, '') : r.name_th; return lang === 'en' ? [r.name_en, th] : [th, r.name_en]; };
+function drawDistricts() {
+  const k = $('dmetric').value, fmt = METRICS[k] || num;
+  const all = Object.values(DR), rows = all.filter(r => r[k] != null).sort((a, b) => b[k] - a[k]);
+  const lo = Math.min(...rows.map(r => r[k])), hi = Math.max(...rows.map(r => r[k]));
+  DG.features.forEach(f => { const v = DR[f.properties.dcode][k]; f.properties.v = v == null ? -1 : (hi > lo ? (v - lo) / (hi - lo) : 0.5); });
+  map.getSource('dist').setData(DG);
+  map.setPaintProperty('dist-fill', 'fill-color', ['case', ['<', ['get', 'v'], 0], 'rgba(0,0,0,0)',
+    ['interpolate', ['linear'], ['get', 'v'], 0, '#fff5eb', 0.5, '#fd8d3c', 1, '#7f2704']]);
+  $('dmin').textContent = rows.length ? fmt(lo) : ''; $('dmax').textContent = rows.length ? fmt(hi) : '';
+  $('dcol').textContent = t('m_' + k).replace(/ \(.*/, '');
+  const tr = (r, i) => { const [a, b] = dName(r, true);  // districts without a value stay listed at the bottom
+    return `<tr data-d="${esc(r.dcode)}" class="${r.dcode === dSel ? 'sel' : ''}${i === '' ? ' nd' : ''}"><td>${i}</td><td>${esc(a)} <span style="color:#888">${esc(b)}</span></td><td class="n">${i === '' ? t('noData') : fmt(r[k])}</td></tr>`; };
+  $('dtable').tBodies[0].innerHTML = rows.map((r, i) => tr(r, i + 1)).join('') + all.filter(r => r[k] == null).map(r => tr(r, '')).join('');
+}
+function selectDistrict(dcode, zoom) {
+  const r = DR[dcode]; if (!r) return;
+  if (dSel) map.setFeatureState({ source: 'dist', id: dSel }, { sel: false });
+  dSel = dcode; map.setFeatureState({ source: 'dist', id: dcode }, { sel: true });
+  setMin($('dpanel'), false);
+  document.querySelectorAll('#dtable tr.sel').forEach(x => x.classList.remove('sel'));
+  const tr = document.querySelector(`#dtable tr[data-d="${dcode}"]`); if (tr) { tr.classList.add('sel'); tr.scrollIntoView({ block: 'nearest' }); }
+  const f = DG.features.find(x => x.properties.dcode === dcode);
+  if (zoom && f) { const c = f.geometry.coordinates.flat(Infinity), xs = c.filter((_, i) => i % 2 === 0), ys = c.filter((_, i) => i % 2);
+    map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]],
+      { padding: mobile() ? { top: 120, bottom: Math.min($('dpanel').offsetHeight + 30, innerHeight - 260), left: 30, right: 30 } : 120, maxZoom: 12.5 }); }
+  const [a, b] = dName(r), small = s => `<br><small style="color:#666">${s}</small>`;
+  let h = `<b>${esc(a)}</b> (${esc(b)})${dMode === 'demo' ? ' <span style="color:#b45309;font-weight:600">DEMO</span>' : ''}<br>` +
+    `${t('area', num(r.area_km2))} · ${t('pop', num(r.pop))} · ${r.buildings == null ? t('bldNone') : t('bld', num(r.buildings))}`;
+  if (dMode === 'none') h += small(t('popOnly'));
+  else {
+    if (r.index != null) h += '<br>' + t('idx', num(r.index, 1));
+    const byTrack = (x, y) => (x.track + x.date < y.track + y.date ? -1 : 1), water = [...(r.water || [])].sort(byTrack), los = [...(r.los || [])].sort(byTrack);
+    if (water.length) h += `<table><tr><th>${t('thWaterDate')}</th><th>track</th><th>${t('thWaterPct')}</th></tr>` +
+      water.map(w => `<tr><td>${esc(w.date)}</td><td>${esc(w.track)}</td><td>${num(w.pct, 1)}</td></tr>`).join('') + '</table>';
+    else h += small(t('noWater'));
+    if (los.length) h += `<table><tr><th>${t('thPair')}</th><th>track</th><th>${t('thLos')}</th><th>coherent %</th></tr>` +
+      los.map(x => `<tr><td>${esc(x.date)}</td><td>${esc(x.track)}</td><td>${num(x.mean_mm, 1)}</td><td>${num(x.coherent_pct, 1)}</td></tr>`).join('') + '</table>' +
+      `<small style="color:#666">${t('losSum', esc(Object.entries(r.los_sum_mm || {}).map(([k, v]) => `${k} ${num(v, 1)}${v == null ? '' : ' mm'}`).join(', ') || t('noData')))}</small>`;
+    else h += small(t('noLos'));
+  }
+  $('ddetail').innerHTML = h;
+  if (mobile()) $('ddetail').scrollIntoView({ block: 'nearest' });
+}
+document.addEventListener('click', e => { const tr = e.target.closest && e.target.closest('#dtable tbody tr'); if (tr) selectDistrict(tr.dataset.d, true); });
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i]').forEach(e => { e.textContent = t(e.dataset.i); });
+  $('lang').textContent = lang === 'th' ? 'EN' : 'ไทย';
+  if (bn) banner(...bn);
+  if (ready) { fillTypes(); refresh(); } else $('dateLabel').textContent = '…';
+  if (DG && map.getSource('dist')) {
+    districtTexts(); drawDistricts();
+    if (dSel) { const was = $('dpanel').classList.contains('min'); selectDistrict(dSel, false); setMin($('dpanel'), was); }
+  }
+}
+$('lang').onclick = () => { lang = lang === 'th' ? 'en' : 'th'; try { localStorage.setItem('bgw-lang', lang); } catch (e) {} applyLang(); };
+applyLang();
+
+map.once('style.load', async () => {  // not 'load': that waits for every basemap tile, which is slow on a bad connection
+  const { m, mode, files } = await loadManifest();
+  await loadDistricts(mode, files);
+  const ver = m.generated ? '?v=' + encodeURIComponent(m.generated) : '';
+  layers = (m.layers || []).filter(L => L && L.image && L.type && L.date && Array.isArray(L.bounds) && L.bounds.length === 4);
+  layers.forEach((L, i) => {
+    L._id = 'L' + i; L.type = String(L.type).toLowerCase(); L.track = String(L.track || '?');
+    L._src = L.image.startsWith('data:') || /^https?:/.test(L.image) ? L.image : 'data/' + L.image + ver;  // manifest paths are relative to data/
+  });
+  rangeMm = m.display_range_mm || 20; ready = true;
+  fillTypes();
+  const pts = layers.flatMap(L => L.bounds);
+  if (pts.length) map.fitBounds([[Math.min(...pts.map(p => p[0])), Math.min(...pts.map(p => p[1]))],
+                                 [Math.max(...pts.map(p => p[0])), Math.max(...pts.map(p => p[1]))]],
+                                { padding: mobile() ? { top: 130, bottom: 70, left: 10, right: 10 } : 60 });
+  refresh();
+});
+
+$('type').onchange = $('track').onchange = refresh;
+$('date').oninput = e => { idx = +e.target.value; show(); };
+$('opacity').oninput = show;
+$('play').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $('play').textContent = '▶'; return; }
+  if (cur.length < 2) return;
+  $('play').textContent = '⏸';
+  timer = setInterval(() => { if (!cur.length) return; idx = (idx + 1) % cur.length; $('date').value = idx; show(); }, 900);
+};
+</script>
+</body>
+</html>
