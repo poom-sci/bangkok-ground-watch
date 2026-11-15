@@ -190,6 +190,10 @@ export default function MapView(p: Props) {
       attributionControl: { compact: false },
     });
     mapRef.current = map;
+    const chipZoom = () => box.current?.classList.toggle('zoomed-out', map.getZoom() < 9);
+    map.on('zoom', chipZoom); map.on('load', chipZoom);
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(box.current);
     if (process.env.NODE_ENV !== 'production') (window as unknown as { __map?: unknown }).__map = map;
     map.on('error', (e) => {
       const id = (e as { sourceId?: string }).sourceId;
@@ -259,7 +263,7 @@ export default function MapView(p: Props) {
       }
       sync();
     });
-    return () => { areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; selPaint.current = ''; added.current.clear(); failed.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
+    return () => { ro.disconnect(); areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; selPaint.current = ''; added.current.clear(); failed.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

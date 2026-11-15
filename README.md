@@ -5,7 +5,7 @@ NASA Space Apps Challenge 2026, challenge "Dancing with the SARs".
 An interactive web app that turns NISAR L-band radar into a map anyone can read: how Bangkok's ground changed along the radar line of sight, where radar saw surface water, a screening view for all 50 districts, and a Site Scout backed by nine years of Sentinel-1 flood history.
 
 - Project page: https://bangkok-ground-watch.vercel.app
-- App: https://bangkok-ground-watch.vercel.app/app/
+- App (dashboard with five tabs: Overview, Site Scout, Ground Pulse, Districts, Shortlist): https://bangkok-ground-watch.vercel.app/app/
 - 7-slide deck (PDF): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
 
 ## What is in this repository

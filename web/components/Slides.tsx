@@ -9,13 +9,13 @@ const TEAM = (process.env.NEXT_PUBLIC_TEAM_NAME ?? '').trim();
 const REPO = (process.env.NEXT_PUBLIC_REPO_URL ?? '').trim();
 
 const IMG = {
-  '1': { src: '/slides/slide-1.webp', w: 2880, h: 1800, alt: 'Site Scout showing a score of 22 for a paddy point in Lat Krabang, with the NISAR ground view beside it, on a dark map of Bangkok.' },
-  '2': { src: '/slides/slide-2.webp', w: 2880, h: 1800, alt: 'Ground Pulse in Districts map view, with the 50 Bangkok districts coloured by screening index and the districts panel open.' },
-  '3a': { src: '/slides/slide-3a.webp', w: 2080, h: 1800, alt: 'Site Scout result near Rojana industrial park: score 26, grade Poor, with a pin on the map.' },
-  '3b': { src: '/slides/slide-3b.webp', w: 912, h: 1616, alt: 'Radar Evidence view with a year strip of radar scenes and a selected scene where water was seen.' },
-  '4a': { src: '/slides/slide-4a.webp', w: 2080, h: 1800, alt: 'The Ground Pulse map area with the radar layer, its colour legend and the date scrubber.' },
-  '4b': { src: '/slides/slide-4b.webp', w: 832, h: 1616, alt: 'A District Profile for Lat Krabang with its total change on two tracks and a chart of mean change per radar pair.' },
-  '5': { src: '/slides/slide-5.webp', w: 2880, h: 1800, alt: 'Ground Pulse showing the surface water layer for 12 November 2026, with its legend.' },
+  '1': { src: '/slides/slide-1.webp', w: 2880, h: 1800, alt: 'The Overview tab of the dashboard: key figures from NISAR and Sentinel-1, top districts and the shortlist, with the sidebar.' },
+  '2': { src: '/slides/slide-2.webp', w: 2400, h: 1672, alt: 'The Districts tab: a sortable table of the 50 Bangkok districts ranked by screening index.' },
+  '3a': { src: '/slides/slide-3a.webp', w: 2400, h: 1672, alt: 'Site Scout with the live example point: a Bangkok map with scouting areas outlined and a result of 22, Poor, with the NISAR ground view.' },
+  '3b': { src: '/slides/slide-3b.webp', w: 896, h: 1456, alt: 'Radar Evidence view with a year strip of radar scenes and a selected scene where water was seen.' },
+  '4a': { src: '/slides/slide-4a.webp', w: 2400, h: 1672, alt: 'The Ground Pulse map area with the radar layer, its colour legend and the date scrubber.' },
+  '4b': { src: '/slides/slide-4b.webp', w: 896, h: 1592, alt: 'A District Profile for Lat Krabang with its total change on two tracks and a chart of mean change per radar pair.' },
+  '5': { src: '/slides/slide-5.webp', w: 2400, h: 1672, alt: 'Ground Pulse showing the surface water layer for 12 November 2026, with its legend.' },
   '6': { src: '/slides/slide-6.webp', w: 2880, h: 1800, alt: 'The About the data dialog listing the limits of the data.' },
 } as const;
 type ImgKey = keyof typeof IMG;

@@ -125,9 +125,9 @@ function Disclosure({ title, extra, children }: { title: string; extra?: React.R
   );
 }
 
-export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack, waterAvailable, secDateOf, trackSpan, onBack, onCheck }: {
+export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack, waterAvailable, secDateOf, trackSpan, onBack, onCheck, backOnly }: {
   d: District; rank: number; rankOf: number; tracks: string[]; track: string; onTrack: (t: string) => void; waterAvailable: boolean;
-  secDateOf: (track: string, date: string) => string | null; trackSpan: (track: string) => { start: string; end: string } | null; onBack: () => void; onCheck: (() => void) | null;
+  secDateOf: (track: string, date: string) => string | null; trackSpan: (track: string) => { start: string; end: string } | null; onBack: () => void; onCheck: (() => void) | null; backOnly?: boolean;
 }) {
   const t = useT();
   const lang: Lang = useLang();
@@ -145,12 +145,12 @@ export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack
   return (
     <div className="detail">
       <div className="detail-head">
-        <button type="button" className="btn back" onClick={onBack}>
+        <button type="button" className={`btn back${backOnly ? '' : ' hide-back'}`} onClick={onBack}>
           <svg className="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           {t('back')}
         </button>
         <div className="detail-name">
-          <h2 className="dh">{first}</h2>
+          <h2 className="dh" tabIndex={-1}>{first}</h2>
           <p className="dother">{other}</p>
         </div>
       </div>

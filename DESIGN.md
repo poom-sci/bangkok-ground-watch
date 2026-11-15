@@ -820,3 +820,116 @@ A light/dark switcher or `prefers-color-scheme` branching, a third mode, renamin
 - Base map: do NOT switch to CARTO `dark_all` (CARTO tiles returned an "API key required" watermark earlier in this project). Keep the OpenStreetMap raster source and its attribution, and darken it in MapLibre by inverting luminance with raster paint: `raster-saturation: -1`, `raster-brightness-min: 0.72`, `raster-brightness-max: 0.04`, `raster-contrast: 0.1` (min above max inverts, so the light land becomes near-black and the dark labels and roads become light). Tune the two brightness values by eye until land is close to `--bg` and labels are readable but quieter than the overlay. This paint applies to the base layer only, never to the LOS or water overlays.
 - The example point shown on first open is fetched live like any other check and must be labelled "Example" until the user taps their own point. If the API call fails, show the normal error state, never a hard-coded result.
 - The NISAR block in the result card reads from districts.json (point-in-polygon on the district outlines already loaded). Outside Bangkok it is not rendered, and one line says NISAR coverage in this app is Bangkok only.
+
+## 14. Dashboard shell and tabs
+
+Wireframe format (design-wireframe skill). Build budget: 2 hours, one engineer. Dark SOLSAT theme, names, behaviour and data from sections 1 to 13 stay. This changes the frame and where each feature lives. Section 9 "Start step" and the floating title chip, mode switch and top-right toolbar are replaced.
+
+### 1. Shell (`/app/`)
+| Piece | 1440 | 1024 (768 to 1279) | 375 |
+|---|---|---|---|
+| Sidebar | 240px, `--surface`, 1px right border `--glass-border` | 72px icon rail, labels in `title` + `aria-label`, shown on focus/hover | none |
+| Top bar | 64px in the content area, `--bg`, bottom hairline | same | 56px, page title + lang + user icon |
+| Tab bar | none | none | bottom, 64px + safe area, 5 items, icon 24 + label 12px, each 75px wide |
+| Content | right of sidebar, padding 24 | padding 16 | padding 16 above the tab bar |
+Sidebar, top to bottom: SOLSAT tile 32px + "Bangkok Ground Watch" (Poppins 600 15px, wraps to two lines) + "by SOLSAT" (Zen Dots 12px, `--muted`); tap = Overview. Nav (5 items, 44px rows, icon 20 + label 15px 500): Overview, Site Scout, Ground Pulse, Districts, Shortlist. Active item: `.pressed` style + 3px `--brand` left bar + `aria-current="page"` (never colour alone). Bottom: "About the data" link (opens the existing dialog), EN|TH toggle (rail: one 44px button showing the current language, toggles it), user chip (rail: person icon; menu unchanged: Shortlist, Switch user, Sign out or Add a name).
+Top bar: left page title (h1 22px; 17px on 375) + one-line descriptor (14px `--muted`, hidden on 375); right the page's status badge. Badge per tab: Site Scout "Provisional grades"; Ground Pulse and Districts "Processed NISAR values" or DEMO; Overview and Shortlist none.
+Moved: floating title chip -> sidebar header; mode switch -> nav items; top-right toolbar (EN|TH, About, user) -> sidebar footer (375: lang and user in the top bar, About inside the user menu); status badge -> top bar; Start step -> Overview.
+
+### 2. Tabs and URLs
+Scheme (one static page, client state from the URL): `/app/?tab=overview|site|ground|districts|shortlist`. Tab change uses `history.pushState` (browser Back works). Old links are read forever and rewritten to the canonical form with `replaceState`:
+- no params -> `tab=overview`; `mode=site` -> `tab=site`; `mode=ground` -> `tab=ground`; any link with `d=<dcode>` (old `?mode=ground&d=1011` included) -> `tab=districts&d=<dcode>` and District Profile opens.
+- Other params stay: `lat`, `lng`, `area` (Site Scout), `about=1`, `focus=<dcode>` (new, Ground Pulse only: flies to the district and outlines it, no panel).
+Radar Evidence stays inside Site Scout (replaces the docked result column, Back returns). Cold start of any URL shows that tab directly and never the name dialog.
+
+### 3. Overview (dashboard home)
+Message: "Two radar views of Bangkok, and where to start." Primary action: Open Site Scout. Content, only from existing data:
+- Header: "Welcome back, {name}" / "Hello, {name}" / guest "Welcome"; sub "NISAR and Sentinel-1 radar at a glance".
+- 6 KPI tiles (3x2 at 1440, 2x3 at 768 and 375; `.raised`, label 14 muted, value mono 40, source line 12 muted "Source: ..."): NISAR radar pairs (count of `gunw` layers, "NISAR processed layers"), NISAR water scenes (count of `water` layers, same source; "Pending" if 0), Districts (length of `districts.json`, "District statistics"), Scouting areas (length of `/v1/coverage`, "Site Scout coverage service"), Radar pair dates (min to max date of `gunw` layers, same manifest source), In your shortlist (count, "This browser"). Tiles are not links. A failed source shows "No data" and a one-line reason.
+- Panel left (7/12): "Top 5 districts by screening index", rows reuse the district row (rank, name, index); row opens District Profile; footer link "See all 50" -> Districts. Panel right (5/12): "Latest NISAR data" (latest radar pair date and track, latest water scene date, both from the manifest) and "Shortlist" summary ("{n} sites · best score {s}" or the empty line, link "Open Shortlist").
+- Actions row under the header: primary "Open Site Scout", secondary "Open Ground Pulse". No map preview (saves a second MapLibre instance), no trends, no arrows, no new charts.
+```
+1440 content                                     375
++--------------------------------------------+   +------------------------+
+| Welcome back, Nok                           |   | Overview               |
+| [Open Site Scout] [Open Ground Pulse]       |   | Welcome back, Nok      |
+| [17 pairs][19 water][50 districts]          |   | [Open Site Scout]      |
+| [3 areas][21 Jun to 31 Oct][2 in shortlist] |   | [Open Ground Pulse]    |
+| Top 5 districts       | Latest NISAR data   |   | 2x3 KPI tiles          |
+| 1 Phra Nakhon  87.7   | Pair: 19 Oct 2026   |   | Top 5 districts        |
+| 2 Dusit        70.1   | Shortlist: 2 sites  |   | Latest NISAR data      |
++--------------------------------------------+   | Shortlist   [tab bar]  |
+```
+
+### 4. Tab layouts (content area; each has a toolbar row 56px, a main panel, optional docked panel)
+- **Site Scout** (lead, 1440): toolbar = Scouting areas as chips (tap = fly), "Use map centre", Display popover (NISAR overlay toggle). Map panel flex 1, rounded 8, 1px border. Result column docked right 400px (440 for Radar Evidence), full height, scrolls; shows the section 13 card with the example point on first open. 1024 and below: result column becomes the bottom sheet over the map. 375: chips row scrolls under the top bar, map fills, sheet 45vh above the tab bar. Shortlist list is removed from here (own tab).
+```
+1440: [toolbar: chips | centre | Display]       375: [chips scroll]
+      +-----------------------+---------+            +--------------+
+      |         MAP           | result  |            |     MAP      |
+      |  pin + coverage       | 22 Poor |            +--------------+
+      +-----------------------+ evidence|            | sheet 22 Poor|
+```
+- **Ground Pulse**: toolbar = layer (LOS | Backscatter | Water), track (Ascending 112 | Descending 4), Display (opacity, Map view). Map fills. Bottom row 72px under the map: play + scrubber (flex) + compact legend (240px, framed). Tap a district: navigates to `tab=districts&d=<dcode>` (Back returns, `focus` keeps it outlined). 375: toolbar wraps to two rows (layer; track + Display), legend row 40px above the scrubber row 56px.
+- **Districts**: toolbar = search box (44px), "{n} of 50 districts", sort select on 375. Table fills; District Profile (section 10 content, unchanged) docks right 440px from 1280 up, opens as a drawer (full height, 420px) below 1280 and a full-screen sheet on 375. Row click or Enter on the district name opens it; Back/Close returns focus to that row. Default sort Screening index descending, nulls last under a "No data" divider. Columns at 1440: Rank, District, Screening index, LOS asc 112 (mm), LOS desc 4 (mm), Highest water, Usable signal, People per km2 (mono right-aligned; 56px rows; sticky header; horizontal scroll inside the table at 1024). 768: Rank, District, Index, Highest water, Usable signal. 375: no table, the district row component (name, index, subline "LOS -14.7 mm · water 3%") plus the sort select. Fields: `los_sum_mm`, `water_max_pct`, mean of `los[].coherent_pct` over all pairs (both tracks), `pop_density`, `index`.
+```
+1440: [search 320] 50 of 50 districts   | 375: [search]   [Sort by v]
+Rank District     Index  A112   D004  Water Usable Dens | 1 Phra Nakhon        87.7
+1    Phra Nakhon  87.7  -14.7  ...    ...   98%   10,965|   LOS -14.7 mm · water No data
+```
+- **Shortlist**: table columns Score + grade, Area, Location (lat, lng 4 decimals, mono), Saved, Open, Remove. Sorted by saved date, newest first. Open -> Site Scout with `lat,lng` (fresh check). Remove: instant, 5s Undo toast. 375: row cards (existing). Empty and guest states exactly as section 9 `my.*`, centred in the panel with the "Open Site Scout" button.
+
+### 5. Gate
+Start step is removed. Name entry becomes a dialog (440px; bottom sheet on 375) with the same field, rules and honesty line, shown only on the first visit to a bare `/app/` (flag `bgw:seen`); Guest, Esc and outside tap = guest and go to Overview. Returning visit: Overview directly, no dialog, greeting by name. Deep links (any `tab`, `lat`, `d`): no dialog, ever. The user chip opens the same dialog ("Add a name", "Switch user"). Remembered per user: language only (last mode is dropped; Overview is the home).
+
+### 6. States, keyboard, copy
+| Screen | loading | error | no data | empty |
+|---|---|---|---|---|
+| Overview | tile skeletons | tile "No data" + reason | tile "Pending" | shortlist line |
+| Districts | 8 skeleton rows | "Could not load district data." + Try again | row index "No data" | search: no match line |
+| Shortlist | skeleton rows | n/a (local) | n/a | empty or guest card |
+Keyboard and focus order: skip link ("Skip to content") -> sidebar brand -> 5 nav links -> About -> language -> user chip -> top bar badge -> toolbar -> main panel -> docked panel. Sidebar and tab bar are `<nav aria-label>` with links (`aria-current`). Tables are real `<table>`; sort headers are buttons with `aria-sort`; the district name cell is the one focusable control per row. Opening a docked panel moves focus to its heading; Esc or Back closes it and returns focus. Focus ring 3px `--focus`; all targets 44px.
+| Key | EN | TH |
+|---|---|---|
+| nav.main / skip | Main navigation / Skip to content | เมนูหลัก / ข้ามไปยังเนื้อหา |
+| nav.overview | Overview | ภาพรวม |
+| nav.districts | Districts | เขต |
+| nav.shortlist | Shortlist | รายการที่คัดไว้ |
+| desc.overview | NISAR and Sentinel-1 radar at a glance | ภาพรวมเรดาร์ NISAR และ Sentinel-1 |
+| desc.districts | 50 districts, exposure screening from NISAR | 50 เขต คัดกรองการสัมผัสจาก NISAR |
+| desc.shortlist | Sites you added in Site Scout | ไซต์ที่คุณเพิ่มจาก Site Scout |
+| ov.guest | Welcome | ยินดีต้อนรับ |
+| kpi.pairs / kpi.water | NISAR radar pairs / NISAR water scenes | คู่ภาพเรดาร์ NISAR / ภาพน้ำผิวดิน NISAR |
+| kpi.districts / kpi.areas | Districts / Scouting areas | เขต / พื้นที่ที่สำรวจได้ |
+| kpi.range / kpi.short | Radar pair dates / In your shortlist | ช่วงวันที่ของคู่ภาพเรดาร์ / ในรายการที่คัดไว้ |
+| src | Source: {s} | แหล่งที่มา: {s} |
+| src.manifest | NISAR processed layers | ชั้นข้อมูล NISAR ที่ประมวลผลแล้ว |
+| src.districts | District statistics | สถิติรายเขต |
+| src.coverage | Site Scout coverage service | บริการพื้นที่ครอบคลุมของ Site Scout |
+| src.local | This browser | เบราว์เซอร์นี้ |
+| ov.top / ov.all | Top 5 districts by screening index / See all 50 | 5 เขตที่ดัชนีคัดกรองสูงสุด / ดูทั้ง 50 เขต |
+| ov.latest | Latest NISAR data | ข้อมูล NISAR ล่าสุด |
+| ov.pair / ov.scene | Latest radar pair: {date} · {track} / Latest water scene: {date} | คู่ภาพเรดาร์ล่าสุด: {date} · {track} / ภาพน้ำผิวดินล่าสุด: {date} |
+| ov.short.n / ov.short.empty | {n} sites · best score {s} / No sites yet. Add one from Site Scout. | {n} ไซต์ · คะแนนสูงสุด {s} / ยังไม่มีไซต์ เพิ่มได้จาก Site Scout |
+| ov.short.open | Open Shortlist | เปิดรายการที่คัดไว้ |
+| open.ground | Open Ground Pulse | เปิด Ground Pulse |
+| th.rank / th.district | Rank / District | อันดับ / เขต |
+| th.index | Screening index | ดัชนีคัดกรอง |
+| th.losA / th.losD | LOS asc 112 (mm) / LOS desc 4 (mm) | LOS ขาขึ้น 112 (มม.) / LOS ขาลง 4 (มม.) |
+| th.water / th.usable | Highest water / Usable signal | น้ำสูงสุด / สัญญาณที่ใช้ได้ |
+| th.density | People per km2 | ประชากรต่อ ตร.กม. |
+| th.score / th.site / th.area / th.saved | Score / Location / Area / Saved | คะแนน / ที่ตั้ง / พื้นที่ / บันทึกเมื่อ |
+| search | Search districts | ค้นหาเขต |
+| count | {n} of 50 districts | {n} จาก 50 เขต |
+| sort | Sort by | เรียงตาม |
+| none.q | No district matches "{q}" | ไม่พบเขตที่ตรงกับ "{q}" |
+| err.d | Could not load district data. | โหลดข้อมูลเขตไม่ได้ |
+| nodata.src | No data from this source right now. | ตอนนี้ไม่มีข้อมูลจากแหล่งนี้ |
+
+### 7. Changes elsewhere
+- Landing (section 10): hero screenshot recaptured from `/app/?tab=site` at 1440 showing the whole shell (sidebar, map, docked result with the Example card). All links use the canonical form: `/app/?tab=site`, `/app/?tab=ground`, `/app/?tab=districts&d=<dcode>`, `/app/?tab=site&area=<id>`, top-bar "Open the app" -> `/app/?tab=overview`. The `/?mode=` redirect script stays (the app normalises). Landing cards add one line "Part of a dashboard with Overview, Districts and Shortlist."
+- Deck (section 11, order from section 13): slide 1 visual = `/app/?tab=overview`; slide 2 = `/app/?tab=districts` (table, default sort); slide 3 = Site Scout tab, docked result with the NISAR block plus Radar Evidence; slide 4 = `/app/?tab=ground` content area (toolbar, legend, scrubber) plus `/app/?tab=districts&d=1011` profile crop; slide 5 = Ground Pulse with Water layer; slide 6 About dialog. Crop to the content area except slide 1 (full shell). All recaptured dark at 1440x900.
+- Section 8 and 9 copy that names "mode switch", "Start step" or "Back to start" is obsolete; the sidebar brand replaces `toStart`.
+
+### 8. Do not build
+A settings or profile page, notifications or a bell, user management or roles, a collapsible-sidebar toggle button (width is by breakpoint only), breadcrumbs, a global search, a map preview on Overview, trend arrows, percent change, sparklines or charts beyond the existing two, KPIs that have no source, drag-to-reorder or saved table views, column pickers, table pagination (50 rows scroll), export, a "recent activity" feed, a dark/light switch.

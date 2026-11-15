@@ -4,8 +4,8 @@ Draft for the NASA Space Apps 2026 project page (challenge: Dancing with the SAR
 
 Project page: https://bangkok-ground-watch.vercel.app
 App: https://bangkok-ground-watch.vercel.app/app/
-Ground Pulse: https://bangkok-ground-watch.vercel.app/app/?mode=ground
-Site Scout: https://bangkok-ground-watch.vercel.app/app/?mode=site
+Ground Pulse: https://bangkok-ground-watch.vercel.app/app/?tab=ground
+Site Scout: https://bangkok-ground-watch.vercel.app/app/?tab=site
 One district (Lat Krabang): https://bangkok-ground-watch.vercel.app/app/?mode=ground&d=1011
 Slide deck (PDF, 1.8 MB): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
 

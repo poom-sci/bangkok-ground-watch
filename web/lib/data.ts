@@ -37,6 +37,7 @@ export interface District {
 
 export interface Dataset {
   failed: boolean;
+  districtsOk: boolean;
   gunwSpan: { from: string; to: string } | null;
   waterSpan: { from: string; to: string } | null;
   rangeMm: number | null;
@@ -145,7 +146,8 @@ export async function loadDataset(): Promise<Dataset> {
   const gunwSpan = gunw.length ? { from: gStarts[0], to: gEnds[gEnds.length - 1] } : null;
   const wDates = layers.filter((l) => l.type === 'water').map((l) => l.date).sort();
   const waterSpan = wDates.length ? { from: wDates[0], to: wDates[wDates.length - 1] } : null;
-  return { failed: mf.failed, gunwSpan, waterSpan, rangeMm, layers, districts, geo, isNisar };
+  const districtsOk = isObj(df.json) && arr(df.json.districts).length > 0;
+  return { failed: mf.failed, districtsOk, gunwSpan, waterSpan, rangeMm, layers, districts, geo, isNisar };
 }
 
 export function useDataset(): LoadState {
