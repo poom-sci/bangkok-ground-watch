@@ -26,7 +26,8 @@ https://bangkok-ground-watch.vercel.app/slides/ (7 slides, public, no login; PDF
 ## Link to final project
 
 - App: https://bangkok-ground-watch.vercel.app (project page) and https://bangkok-ground-watch.vercel.app/app/ (the app)
-- Code: TODO public repository link (web app + NISAR pipeline), and TODO public link for the site suitability engine (solsat-siting, currently private)
+- Code (web app + NISAR pipeline): https://github.com/poom-sci/bangkok-ground-watch
+- Code (site suitability engine): TODO public link for solsat-siting (currently private, its owner must make it public)
 
 ## Detailed project description
 
