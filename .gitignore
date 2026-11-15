@@ -32,3 +32,10 @@ SUBMISSION.md
 .env
 .env.local
 .netrc
+
+# Local bundle for upload
+submission-package/
+
+# Local env files may hold keys: never commit
+.env*.local
+*.local.env
