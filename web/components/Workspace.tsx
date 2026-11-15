@@ -23,6 +23,7 @@ import { FusionCard, FusionLegend, WaterByCover } from './FusionParts';
 import ScoreLegend, { useExclText } from './ScoreLegend';
 import { ConfLegend } from './ConfidenceParts';
 import SearchBox, { type Place } from './SearchBox';
+import { usePatch } from '@/lib/patch';
 import { useLookupSampler } from '@/lib/lookup';
 import type { MapViewMode, SiteProps } from './MapView';
 import type { Key, Lang } from '@/lib/i18n';
@@ -100,17 +101,18 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const [date, setDate] = useState(() => { const d = datesOf(has.gunw ? 'gunw' : 'water', bestTrack(has.gunw ? 'gunw' : 'water')); return d[d.length - 1] ?? ''; });
   const [sheetFull, setSheetFull] = useState(false);
   const [fusionOn, setFusionOn] = useState(false);
-  const [siteLayer, setSiteLayerRaw] = useState<'score' | 'conf' | 'none'>(route.layer === 'confidence' ? 'conf' : 'none');
+  const [siteLayer, setSiteLayerRaw] = useState<'score' | 'conf' | 'none'>(route.layer === 'confidence' ? 'conf' : 'score');
   useEffect(() => { try { const v = localStorage.getItem('bgw-sitelayer2'); if (route.layer !== 'confidence' && (v === 'score' || v === 'conf' || v === 'none')) setSiteLayerRaw(v); } catch { /* storage unavailable */ } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const setSiteLayer = (v: 'score' | 'conf' | 'none') => { setSiteLayerRaw(v); try { localStorage.setItem('bgw-sitelayer2', v); } catch { /* storage unavailable */ } };
   const [ovOn, setOvOn] = useState(true);
+  const [wholeOn, setWholeOn] = useState(route.layer === 'confidence');
   const [labelsOn, setLabelsOn] = useState(true);
   const [place, setPlace] = useState<Place | null>(null);
   const [viewZoom, setViewZoom] = useState(9);
-  const scoreOn = siteLayer === 'score';
-  const confOn = siteLayer === 'conf' && !!data.confidence;
-  useEffect(() => { if (route.layer === 'confidence') setSiteLayer('conf'); }, [route.layer]);
+  const scoreOn = siteLayer === 'score' && wholeOn;
+  const confOn = siteLayer === 'conf' && !!data.confidence && wholeOn;
+  useEffect(() => { if (route.layer === 'confidence') { setSiteLayer('conf'); setWholeOn(true); } }, [route.layer]);
   const lookupS = useLookupSampler(data.lookup);
   const [scoreOp, setScoreOp] = useState(100);
   const [viewCenter, setViewCenter] = useState<[number, number] | null>(null);
@@ -172,7 +174,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
     const key = own ? `${route.lat},${route.lng}` : route.area ? `area:${route.area}` : 'example';
     if (key === handled.current) return;
     handled.current = key;
-    if (own) { dropPin(route.lat as number, route.lng as number); setFlyBox({ center: [route.lng as number, route.lat as number], zoom: 13, key: Date.now() }); return; }
+    if (own) { dropPin(route.lat as number, route.lng as number); setFlyBox({ center: [route.lng as number, route.lat as number], zoom: 15, key: Date.now() }); return; }
     if (route.area) { const a = site.areas?.find((x) => x.id === route.area); if (a) goArea(a); return; }
   }, [isSite, route.lat, route.lng, route.area, site.areas, site.pin, site.check, dropPin, goArea]);
 
@@ -309,6 +311,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   };
   const placeCode = place && data.geo ? districtAtPoint(data.geo, place.lat, place.lng) : null;
   const placeDistrict = placeCode ? data.districts.find((d) => d.dcode === placeCode) ?? null : null;
+  const tryExample = () => { setIsExample(true); site.check({ lat: 13.75, lng: 100.83 }); setSiteOpen(true); setEvOpen(false); setFlyBox({ center: [100.83, 13.75], zoom: 16, key: Date.now() }); };
   const useCentre = () => { const c = centerRef.current?.(); if (c) dropPin(c.lat, c.lng); };
   const nisarCode = site.res.s === 'ok' && site.pin ? districtAtPoint(data.geo, site.pin.lat, site.pin.lng) : null;
   const nisarDistrict = nisarCode ? data.districts.find((d) => d.dcode === nisarCode) ?? null : null;
@@ -317,7 +320,8 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const sheetOverlay = !wide;
   const padding = { top: phone ? 24 : 48, left: phone ? 16 : 48, right: phone ? 16 : 48, bottom: sheetOverlay && isSite && siteIsOpen ? Math.round((typeof document === 'undefined' ? 400 : document.querySelector('.map-panel')?.clientHeight ?? 400) * 0.45) + 16 : 48 };
 
-  const siteProps: SiteProps | null = isSite ? { areas: site.areas ?? [], pin: site.pin, fly: flyBox, centerRef, goLabel: t('site.go'), pinLabel: t('site.pin'), onPick: dropPin, onFly: goArea } : null;
+  const pickMap = (lat: number, lng: number) => { dropPin(lat, lng); if (viewZoom < 13) setFlyBox({ center: [lng, lat], zoom: 14, key: Date.now() }); };
+  const siteProps: SiteProps | null = isSite ? { areas: site.areas ?? [], pin: site.pin, fly: flyBox, centerRef, goLabel: t('site.go'), pinLabel: t('site.pin'), onPick: pickMap, onFly: goArea } : null;
   const focusDistrict = isGround && route.focus && data.districts.some((d) => d.dcode === route.focus) ? route.focus : null;
 
   const coverageAlert = (
@@ -367,6 +371,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
           <div className="field"><label className="field-label" htmlFor={`${popId}-so`}>{t('score.opacity')} <span className="mono">{scoreOp}%</span></label><input id={`${popId}-so`} className="range" type="range" min={30} max={100} step={5} value={scoreOp} onChange={(e) => setScoreOp(Number(e.target.value))} /></div>
         </>
       )}
+      <label className="switch"><input type="checkbox" role="switch" checked={wholeOn} onChange={(e) => setWholeOn(e.target.checked)} /><span>{t('site.whole')}</span></label>
       <label className="switch"><input type="checkbox" role="switch" checked={overlayOn} onChange={(e) => setOverlayOn(e.target.checked)} /><span>{t('site.overlay')}</span></label>
       <p className="comp-sub">{t('site.overlay.note')}</p>
     </div>
@@ -381,6 +386,14 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
     ...(isSite && data.scoreMaps ? Object.values(data.scoreMaps.areas).map((a) => ({ layer: a.layer, opacity: scoreOn ? (scoreOp / 100) * (viewZoom > 15 ? 0.5 : 1) : 0 })) : []),
     ...(isGround && !showFusion && type === 'gunw' && veil ? [{ layer: veil.layer, opacity: ovOn ? 1 : 0 }] : []),
   ];
+  const patchLayer = (() => {
+    if (!isSite || !site.pin) return null;
+    if (siteLayer === 'conf' && data.confidence) return data.confidence.layer;
+    const a = (site.areas ?? []).find((x) => inBox(x.bbox, site.pin!.lat, site.pin!.lng));
+    return (a && data.scoreMaps?.areas[a.id]?.layer) ?? null;
+  })();
+  const patch = usePatch(patchLayer, isSite ? site.pin : null);
+  const patchShown = !!patch && siteLayer !== 'none';
   const viewArea = (() => {
     const areas = site.areas ?? [];
     if (!viewCenter) return areas[0]?.id ?? null;
@@ -443,17 +456,17 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
         <div className="map-panel">
           {mapShown && (
             <MapView layers={data.fusion ? [...data.layers, data.fusion.layer] : data.layers} current={isSite ? (overlayOn ? latestLos : null) : showFusion ? data.fusion!.layer : radar && ovOn ? current : null} opacity={isSite ? 60 : opacity} mode={isSite ? 'radar' : mapView}
-              geo={data.geo} districts={data.districts} selected={focusDistrict} flyKey={flyKey} padding={padding} onSelect={pickGround} onOverlayError={() => setToast(true)} label={t('map.label')} site={siteProps} fitKey={fitKey} base={base} city={isSite && cityReliable ? city : null} cityMask={scoreOn} districtLines={false} lang={lang} extra={extra} onMove={(lng, lat, z) => { setViewCenter([lng, lat]); setViewZoom(z); }} labels={labelsOn} marker={!isSite && place ? { lat: place.lat, lng: place.lng } : null} />
+              geo={data.geo} districts={data.districts} selected={focusDistrict} flyKey={flyKey} padding={padding} onSelect={pickGround} onOverlayError={() => setToast(true)} label={t('map.label')} site={siteProps} fitKey={fitKey} base={base} city={isSite && cityReliable ? city : null} cityMask={scoreOn} districtLines={false} lang={lang} extra={extra} fly={isGround && place ? flyBox : null} patch={{ data: patch, opacity: siteLayer === 'none' ? 0 : 0.55 }} onMove={(lng, lat, z) => { setViewCenter([lng, lat]); setViewZoom(z); }} labels={labelsOn} marker={!isSite && place ? { lat: place.lat, lng: place.lng } : null} />
           )}
           {isSite && data.scoreMaps && <div className="map-switch glass"><Segmented label={t('sw.label')} value={siteLayer} onChange={setSiteLayer} options={[{ value: 'none', label: t('sw.imagery') }, { value: 'score', label: t('sw.score') }, ...(data.confidence ? [{ value: 'conf' as const, label: t('sw.conf') }] : [])]} /></div>}
           {isGround && <div className="map-switch glass"><button type="button" className="btn ov-toggle" aria-pressed={ovOn} onClick={() => setOvOn((v) => !v)}>{t('ov.toggle')}: {t(ovOn ? 'ov.on' : 'ov.off')}</button></div>}
           {place && <p className="search-attr">{t('sr.attr')}</p>}
           {isGround && place && placeDistrict && <div className="place-card glass"><p className="dmain">{place.name}</p><button type="button" className="btn" onClick={() => openDistrict(placeDistrict.dcode)}>{t('sr.open', { district: lang === 'en' ? placeDistrict.nameEn : placeDistrict.nameTh })}</button></div>}
           {isSite && <div className="crosshair" role="img" aria-label={t('site.crosshair')} />}
-          {isSite && data.confidence && confOn && <ConfLegend conf={data.confidence} />}
-          {isSite && data.scoreMaps && scoreOn && <ScoreLegend maps={data.scoreMaps} areaId={viewArea} defaultOpen={!phone} dashed={!!cityRaw} />}
+          {isSite && data.confidence && siteLayer === 'conf' && (confOn || patchShown) && <ConfLegend conf={data.confidence} />}
+          {isSite && data.scoreMaps && siteLayer === 'score' && (scoreOn || patchShown) && <ScoreLegend key={wholeOn ? 'w' : 'p'} maps={data.scoreMaps} areaId={viewArea} defaultOpen={wholeOn && !phone} dashed={!!cityRaw} />}
           {isSite && overlayOn && <div className="map-legend glass"><Legend mode="radar" type="gunw" layer={latestLos} rangeMm={data.rangeMm} isNisar={data.isNisar} /></div>}
-          {site.areas && isSite && !site.pin && <p className="map-hint glass">{t('site.hint')}</p>}
+          {site.areas && isSite && !site.pin && <div className="map-hint glass"><p>{t('site.hint')}</p><button type="button" className="btn" onClick={tryExample}>{t('site.tryex')}</button></div>}
         </div>
         {isSite && siteIsOpen && (
           <aside className={`dock-col site-col${evOpen ? ' ev' : ''}${sheetFull ? ' full' : ''}`} aria-label={t('card.title')}>

@@ -251,7 +251,7 @@ button { font: inherit; color: inherit; }
 .arow { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: 0 var(--s1) 0 var(--s3); border: 1px solid var(--edge); border-radius: var(--r-ctl); background: var(--surface); }
 .arow-text { display: flex; flex-direction: column; min-width: 0; }
 .icon-btn { width: var(--ctl-h); padding: 0; flex: none; }
-.area-chip { font: inherit; font-size: var(--t-sm); font-weight: 600; color: var(--text); background: var(--surface-glass); border: 1px solid var(--glass-border); border-radius: var(--r-pill); padding: var(--s1) var(--s3); min-height: 32px; cursor: pointer; box-shadow: var(--raised-sm); }
+.area-chip { font: inherit; font-size: var(--t-sm); font-weight: 600; color: var(--text); background: var(--bg); border: 1px solid var(--glass-border); border-radius: var(--r-pill); padding: var(--s1) var(--s3); min-height: 32px; cursor: pointer; box-shadow: var(--raised-sm); }
 .pin { width: var(--pin); height: var(--pin); border-radius: 50%; background: var(--accent); border: var(--pin-ring) solid var(--sh-light); box-shadow: var(--raised-sm); box-sizing: content-box; }
 .pin.hollow { background: var(--sh-light); border-color: var(--edge); }
 .chips-row { display: flex; gap: var(--s2); overflow-x: auto; padding-bottom: 2px; }
@@ -721,7 +721,9 @@ ol { margin: 0; padding: 0; }
 .map-panel .map { position: absolute; inset: 0; }
 .map-panel .maplibregl-ctrl-bottom-right { bottom: 0; }
 .map-legend { position: absolute; left: var(--s3); bottom: var(--s3); z-index: 3; padding: var(--s2) var(--s3); width: 220px; }
-.map-hint { position: absolute; left: 50%; top: var(--s3); transform: translateX(-50%); z-index: 3; padding: var(--s2) var(--s3); font-size: var(--t-sm); white-space: nowrap; }
+.map-hint { position: absolute; left: 50%; top: var(--s3); transform: translateX(-50%); z-index: 3; padding: var(--s2) var(--s3); font-size: var(--t-sm); white-space: nowrap; display: flex; align-items: center; gap: var(--s3); }
+.map-hint p { margin: 0; }
+.map-hint .btn { min-height: 32px; padding: 0 var(--s3); font-size: var(--t-sm); }
 .dock-col { flex: none; width: 400px; display: flex; flex-direction: column; min-height: 0; background: var(--surface); border: 1px solid var(--glass-border); border-radius: var(--r-card); overflow: hidden; }
 .dock-col.ev { width: 440px; }
 .dock-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--glass-border); }
@@ -826,7 +828,7 @@ ol { margin: 0; padding: 0; }
   .profile-col { width: 100vw; }
   .undo-toast { bottom: calc(64px + var(--s4)); }
   .popover2 { right: auto; left: 0; width: min(300px, calc(100vw - 32px)); }
-  .map-hint { white-space: normal; width: calc(100% - 24px); text-align: center; }
+  .map-hint { white-space: normal; width: calc(100% - 24px); text-align: left; top: auto; bottom: 36px; }
   .side-user .menu { bottom: auto; }
   .phone-user .menu { top: calc(100% + var(--s2)); right: 0; left: auto; bottom: auto; }
 }

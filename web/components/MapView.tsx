@@ -6,6 +6,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { codeOf, featureCentre, type CityOutline, type Layer, type District } from '@/lib/data';
 import { useLang, useT } from './ui';
+import type { Patch } from '@/lib/patch';
 import { areaLabel, inBox, type Area, type BBox, type Pin } from '@/lib/siting';
 
 export type MapViewMode = 'radar' | 'districts';
@@ -41,6 +42,8 @@ interface Props {
   marker?: { lat: number; lng: number } | null;
   lang?: 'en' | 'th';
   extra?: { layer: Layer; opacity: number }[];
+  fly?: SiteProps['fly'];
+  patch?: { data: Patch | null; opacity: number } | null;
   onMove?: (lng: number, lat: number, zoom: number) => void;
   city?: CityOutline | null;
   cityMask?: boolean;
@@ -80,6 +83,7 @@ function boundsOf(f: Feature): maplibregl.LngLatBoundsLike | null {
 }
 
 const ESRI_ATTR = 'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 export const SAT_PAINT = { 'raster-brightness-max': 0.65, 'raster-saturation': -0.35, 'raster-contrast': 0.1 };
 const SAT_ATTR = 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noopener noreferrer">EOX IT Services GmbH</a> (contains modified Copernicus Sentinel data 2016)';
 
@@ -97,6 +101,7 @@ export default function MapView(p: Props) {
   const failed = useRef(new Set<string>());
   const zOrder = useRef(new Map<string, number>());
   const cityKeyRef = useRef('');
+  const patchApplied = useRef('');
   const gMarker = useRef<maplibregl.Marker | null>(null);
   const areaMarkers = useRef<maplibregl.Marker[]>([]);
   const pinMarker = useRef<maplibregl.Marker | null>(null);
@@ -129,7 +134,7 @@ export default function MapView(p: Props) {
   };
   const flySite = () => {
     const map = mapRef.current;
-    const f = latest.current.site?.fly;
+    const f = latest.current.site?.fly ?? latest.current.fly;
     if (!map || !ready.current || !f || f.key === lastFly.current) return;
     lastFly.current = f.key;
     const duration = reduceMotion() ? 0 : 600;
@@ -207,6 +212,15 @@ export default function MapView(p: Props) {
       if (!gMarker.current) { const el = document.createElement('div'); el.className = 'pin'; el.setAttribute('role', 'img'); gMarker.current = new maplibregl.Marker({ element: el }).setLngLat([cur.marker.lng, cur.marker.lat]).addTo(map); }
       gMarker.current.setLngLat([cur.marker.lng, cur.marker.lat]);
     } else if (gMarker.current) { gMarker.current.remove(); gMarker.current = null; }
+    const pt = cur.patch?.data ?? null;
+    const patchKey = pt ? pt.coords.join('|') : '';
+    if (patchKey !== patchApplied.current) {
+      patchApplied.current = patchKey;
+      if (pt) (map.getSource('patch') as maplibregl.ImageSource | undefined)?.updateImage({ url: pt.url, coordinates: pt.coords });
+      (map.getSource('cell') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: pt ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pt.cell } }] : [] });
+    }
+    map.setLayoutProperty('patch', 'visibility', pt && cur.patch && cur.patch.opacity > 0 ? 'visible' : 'none');
+    if (cur.patch) map.setPaintProperty('patch', 'raster-opacity', cur.patch.opacity);
     if (site?.pin) {
       const covered = site.areas.some((a) => inBox(a.bbox, site.pin!.lat, site.pin!.lng));
       if (!pinMarker.current) { const el = document.createElement('div'); el.classList.add('pin'); el.setAttribute('role', 'img'); pinMarker.current = new maplibregl.Marker({ element: el }).setLngLat([site.pin.lng, site.pin.lat]).addTo(map); }
@@ -316,6 +330,9 @@ export default function MapView(p: Props) {
       map.addSource('city', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('citymask', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: 'city-mask', type: 'fill', source: 'citymask', layout: { visibility: 'none' }, paint: { 'fill-color': token('--bg'), 'fill-opacity': 0.45 } });
+      map.addSource('patch', { type: 'image', url: BLANK, coordinates: [[0, 1], [1, 1], [1, 0], [0, 0]] });
+      map.addLayer({ id: 'patch', type: 'raster', source: 'patch', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.55, 'raster-fade-duration': 0, 'raster-resampling': 'nearest' } });
+      map.addSource('cell', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('areas', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas', layout: { visibility: 'none' }, paint: { 'fill-color': token('--map-area-fill'), 'fill-opacity': 0 } });
       map.addLayer({ id: 'area-dash', type: 'line', source: 'areas', filter: ['==', ['get', 'id'], 'bangkok'], layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': 1, 'line-opacity': 0.45, 'line-dasharray': [3, 3] } });
@@ -324,6 +341,8 @@ export default function MapView(p: Props) {
       map.addLayer({ id: 'city-line', type: 'line', source: 'city', layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': 2 } });
       map.addLayer({ id: 'esri-places', type: 'raster', source: 'esriplaces', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.95 } });
       map.addLayer({ id: 'esri-trans', type: 'raster', source: 'esritrans', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.8 } });
+      map.addLayer({ id: 'cell-casing', type: 'line', source: 'cell', paint: { 'line-color': '#000000', 'line-width': 5, 'line-opacity': 0.8 } });
+      map.addLayer({ id: 'cell-line', type: 'line', source: 'cell', paint: { 'line-color': token('--text'), 'line-width': 2 } });
       map.on('click', (e) => { const s = latest.current.site; if (s) s.onPick(e.lngLat.lat, e.lngLat.lng); });
       map.addLayer({ id: 'dist-hit', type: 'fill', source: 'dist', paint: { 'fill-color': 'rgba(0,0,0,0)' } });
       map.addLayer({ id: 'dist-casing', type: 'line', source: 'dist', paint: {
@@ -360,7 +379,7 @@ export default function MapView(p: Props) {
       }
       sync();
     });
-    return () => { ro.disconnect(); areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; selPaint.current = ''; added.current.clear(); failed.current.clear(); zOrder.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
+    return () => { ro.disconnect(); areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; patchApplied.current = ''; selPaint.current = ''; added.current.clear(); failed.current.clear(); zOrder.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -406,7 +425,7 @@ export default function MapView(p: Props) {
 
   useEffect(() => { flySite();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.site?.fly?.key]);
+  }, [p.site?.fly?.key, p.fly?.key]);
 
   useEffect(() => { if (p.flyKey !== 0) flyToSelected();
     // eslint-disable-next-line react-hooks/exhaustive-deps
