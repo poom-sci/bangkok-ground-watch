@@ -80,9 +80,19 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const datesOf = useCallback((type: LayerType, track: string) => sortedUnique(data.layers.filter((l) => l.type === type && l.track === track).map((l) => l.date)), [data.layers]);
   const tracksOf = useCallback((type: LayerType) => sortedUnique(data.layers.filter((l) => l.type === type).map((l) => l.track)), [data.layers]);
 
+  const coverage = useMemo(() => {
+    const m: Record<string, number> = {};
+    allTracks.forEach((k) => { m[k] = data.districts.filter((d) => d.los.some((x) => x.track === k && x.mean != null)).length; });
+    return m;
+  }, [allTracks, data.districts]);
+  const bestTrack = (ty: LayerType) => {
+    const ts = tracksOf(ty);
+    const last = (k: string) => datesOf(ty, k).slice(-1)[0] ?? '';
+    return [...ts].sort((a, b) => (coverage[b] ?? 0) - (coverage[a] ?? 0) || (last(b) < last(a) ? -1 : last(b) > last(a) ? 1 : 0))[0] ?? '';
+  };
   const [type, setType] = useState<LayerType>(has.gunw ? 'gunw' : 'water');
-  const [track, setTrack] = useState(() => tracksOf(has.gunw ? 'gunw' : 'water')[0] ?? '');
-  const [date, setDate] = useState(() => { const d = datesOf(has.gunw ? 'gunw' : 'water', tracksOf(has.gunw ? 'gunw' : 'water')[0] ?? ''); return d[d.length - 1] ?? ''; });
+  const [track, setTrack] = useState(() => bestTrack(has.gunw ? 'gunw' : 'water'));
+  const [date, setDate] = useState(() => { const d = datesOf(has.gunw ? 'gunw' : 'water', bestTrack(has.gunw ? 'gunw' : 'water')); return d[d.length - 1] ?? ''; });
   const [opacity, setOpacity] = useState(85);
   const [mapView, setMapView] = useState<MapViewMode>('radar');
   const [playing, setPlaying] = useState(false);
@@ -171,7 +181,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const changeType = (nt: LayerType) => {
     if (!has[nt]) return;
     const tracks = tracksOf(nt);
-    const nk = tracks.includes(track) ? track : tracks[0];
+    const nk = tracks.includes(track) ? track : bestTrack(nt);
     const nd = datesOf(nt, nk);
     setPlaying(false); setType(nt); setTrack(nk); setDate(nd[nd.length - 1]);
   };
@@ -281,7 +291,8 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
     </div>
   );
 
-  const trackOptions = allTracks.map((k) => { const p = parseTrack(k); return { value: k, label: p ? t(p.dir === 'A' ? 'track.A' : 'track.D', { n: p.n }) : k, disabled: !availableTracks.has(k) }; });
+  const trackOptions = allTracks.map((k) => { const p = parseTrack(k); return { value: k, label: `${p ? t(p.dir === 'A' ? 'track.A' : 'track.D', { n: p.n }) : k} · ${t('track.cov', { k: coverage[k] ?? 0, n: data.districts.length })}`, disabled: !availableTracks.has(k) }; });
+  const missing = data.districts.filter((d) => !d.los.some((x) => x.track === track && x.mean != null));
   const popWrap = (content: React.ReactNode) => (
     <div className="pop-wrap">
       <button type="button" className="btn" data-display-toggle aria-expanded={popOpen} aria-controls={popId} onClick={() => setPopOpen((v) => !v)}>
@@ -376,7 +387,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
             {loadingUrl && curUrl === loadingUrl && <p className="loading-chip" role="status">{t('overlay.loading')}</p>}
             <Scrubber dates={dates} secDates={secDates} index={index} onIndex={(i) => setDate(dates[i])} playing={playing} onPlaying={setPlaying} disabled={!radar} />
           </div>
-          <div className="gb-legend"><Legend mode={mapView} type={type} layer={current} rangeMm={data.rangeMm} isNisar={data.isNisar} /></div>
+          <div className="gb-legend"><Legend mode={mapView} type={type} layer={current} rangeMm={data.rangeMm} isNisar={data.isNisar} />{missing.length > 0 && data.districts.length > 0 && <p className="track-note">{t('track.missing', { n: missing.length, names: missing.map((d) => (lang === 'en' ? d.nameEn : d.nameTh)).join(', ') })}</p>}</div>
         </div>
       )}
     </section>

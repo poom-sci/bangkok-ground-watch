@@ -380,6 +380,8 @@ const en = {
   'tab.bar': 'Tabs',
   'lang.toggle': 'Switch language',
   'th.usableMean': 'Usable signal (mean of tracks)',
+  'track.cov': '{k}/{n} districts',
+  'track.missing': 'This track does not cover {n} district(s): {names}.',
 } as const;
 
 export type Key = keyof typeof en;
@@ -764,6 +766,8 @@ const th: Record<Key, string> = {
   'tab.bar': 'แท็บ',
   'lang.toggle': 'สลับภาษา',
   'th.usableMean': 'สัญญาณที่ใช้ได้ (เฉลี่ยทุกแนว)',
+  'track.cov': '{k}/{n} เขต',
+  'track.missing': 'แนววงโคจรนี้ไม่ครอบคลุม {n} เขต: {names}',
 };
 
 export const dict: Record<Lang, Record<Key, string>> = { en, th };
