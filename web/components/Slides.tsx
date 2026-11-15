@@ -181,7 +181,7 @@ export default function Slides() {
             <div className="s7-card"><h3>Partner data</h3><p>Copernicus Sentinel-1 and Sentinel-2 (ESA) · <span className="mono">Copernicus DEM GLO-30</span> (ESA) · <span className="mono">ESA WorldCover 2021</span></p></div>
             <div className="s7-card"><h3>Other</h3><p>OpenStreetMap contributors · <span className="mono">MapLibre GL JS</span> · <span className="mono">Next.js</span></p></div>
           </div>
-          <div className="s7-ai"><p>We used Claude (Anthropic), through Claude Code, to write code, design the interface and draft text. The team chose the challenge, the data and the method, and checked results against real NISAR and Sentinel-1 data. No AI-generated images, video or audio.</p></div>
+          <div className="s7-ai"><p>We used Claude (Anthropic), through Claude Code, to write code, design the interface and draft text. The team chose the challenge, the data and the method, and checked results against real NISAR and Sentinel-1 data. The demo video voiceover is a synthetic voice. No AI-generated images.</p></div>
           <p className="s7-foot"><LogoTile size={40} /> Live app: <a href="/app/">{APP_URL}</a>{REPO && <> · Code: <a href={REPO}>{REPO}</a></>} · Not affiliated with or endorsed by NASA.</p>
         </Slide>
       </main>

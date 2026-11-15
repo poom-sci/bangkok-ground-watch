@@ -6,7 +6,7 @@ An interactive web app that turns NISAR L-band radar into a map anyone can read:
 
 - Project page: https://bangkok-ground-watch.vercel.app
 - App (dashboard with five tabs: Overview, Site Scout, Ground Pulse, Districts, Shortlist): https://bangkok-ground-watch.vercel.app/app/
-- 7-slide deck (PDF): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
+- Demo video (29 s, synthetic voiceover): https://bangkok-ground-watch.vercel.app/demo/bangkok-ground-watch-demo.mp4
 
 ## What is in this repository
 
@@ -103,7 +103,7 @@ Not affiliated with or endorsed by NASA.
 
 ## Use of AI
 
-Most of the code in this repository (the Python pipeline, the web app) was written with Claude (Anthropic) through Claude Code, which also produced the interface specification in `DESIGN.md`, reviewed the code and drafted the project text. Team members chose the challenge, the data and the method, ran the pipeline on real NISAR data, and decided what the app claims. No AI-generated images, video or audio are used.
+Most of the code in this repository (the Python pipeline, the web app) was written with Claude (Anthropic) through Claude Code, which also produced the interface specification in `DESIGN.md`, reviewed the code and drafted the project text. Team members chose the challenge, the data and the method, ran the pipeline on real NISAR data, and decided what the app claims. The 29-second demo video was assembled with AI assistance from real screenshots of the app, and its voiceover is a synthetic text-to-speech voice, labelled in the video. No AI-generated images are used.
 
 ## Licence
 

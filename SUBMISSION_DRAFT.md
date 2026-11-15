@@ -122,7 +122,7 @@ Python (asf_search, earthaccess, h5py, numpy, pyproj, matplotlib, FastAPI, scipy
 
 ## Use of artificial intelligence
 
-We used Claude (Anthropic), through Claude Code, as a coding and writing assistant. It wrote most of the code for the NISAR fetch and processing scripts and for the web app, produced the interface design specification, reviewed the code, and drafted this project text. Team members chose the challenge, the data and the method, ran and checked the results against real NISAR and Sentinel-1 data, and made the decisions about what the app claims. No AI-generated images, video or audio are used. The repository README states which parts were written with AI assistance.
+We used Claude (Anthropic), through Claude Code, as a coding and writing assistant. It wrote most of the code for the NISAR fetch and processing scripts and for the web app, produced the interface design specification, reviewed the code, and drafted this project text. Team members chose the challenge, the data and the method, ran and checked the results against real NISAR and Sentinel-1 data, and made the decisions about what the app claims. The 29-second demo video was assembled with AI assistance from real screenshots of the app, and its voiceover is a synthetic text-to-speech voice, labelled in the video. No AI-generated images are used. The repository README states which parts were written with AI assistance.
 The site suitability engine was written by a teammate in a separate repository; its AI use is described in that repository.
 
 ---

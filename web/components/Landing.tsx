@@ -216,7 +216,7 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
         <p>{REPO ? <>{t('foot.ossLink')} <a className="link" href={REPO}>{REPO}</a></> : t('foot.oss')}</p>
         <p>{t('foot.ai')}</p>
         <p>{t('foot.na')}</p>
-        <p><a className="link" href="/slides/bangkok-ground-watch.pdf" download>{t('foot.deck')}</a></p>
+        <p><a className="link" href="/demo/bangkok-ground-watch-demo.mp4">{t('foot.deck')}</a></p>
       </footer>
     </div>
   );
