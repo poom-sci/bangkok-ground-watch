@@ -14,6 +14,7 @@ export interface Layer {
   url: string;
   bounds: [LonLat, LonLat, LonLat, LonLat];
   thresholdDb: number | null;
+  z?: number;
 }
 
 export interface LosEntry { date: string; track: string; mean: number | null; p10: number | null; p90: number | null; coherent: number | null }
@@ -35,7 +36,7 @@ export interface District {
   water: WaterEntry[];
 }
 
-export interface FusionClass { cls: string; colour: string | null; definition: string }
+export interface FusionClass { cls: string; colour: string | null; alpha: number | null; definition: string }
 export interface Fusion {
   layer: Layer;
   legend: FusionClass[];
@@ -47,10 +48,32 @@ export interface Fusion {
   cropland: Record<string, { first: string; min: string; last: string; pct: Record<string, number> }>;
   perDistrict: Record<string, { recurrence: number | null; s1: number | null }>;
   s1Threshold: number | null;
+  nisarThreshold: number | null;
+}
+
+export interface ScoreMaps {
+  ramp: { range: string; colour: string }[];
+  excluded: { cls: string; colour: string; label: string; reason: string }[];
+  areas: Record<string, { layer: Layer; scoredPct: number | null; excl: Record<string, number> }>;
+  veil: Record<string, { layer: Layer; pct: number | null }>;
+  veilColour: string | null;
+}
+
+export interface ConfClass { id: number; cls: string; colour: string | null; alpha: number | null; conf: string | null }
+export interface ElevBin { from: number | null; to: number | null; cells: number; recurrence: number | null; everWet: number | null }
+export interface Lookup {
+  url: string; w: number; h: number; lon0: number; lat0: number; col: number[]; row: number[]; classes: Record<number, string>;
+}
+export interface Confidence {
+  layer: Layer; legend: ConfClass[]; classPct: Record<string, number>; sanity: Record<string, number>;
 }
 
 export interface Dataset {
   failed: boolean;
+  confidence: Confidence | null;
+  lookup: Lookup | null;
+  elev: { all: ElevBin[]; visible: ElevBin[]; caveat: string | null } | null;
+  scoreMaps: ScoreMaps | null;
   fusion: Fusion | null;
   districtsOk: boolean;
   gunwSpan: { from: string; to: string } | null;
@@ -172,7 +195,7 @@ function parseFusion(j: unknown, generated: string | null): Fusion | null {
   arr(j.districts).forEach((d) => { if (isObj(d) && str(d.dcode)) perDistrict[String(d.dcode)] = { recurrence: finite(d.nisar_recurrence_mean), s1: finite(d.s1_frequency_mean) }; });
   return {
     layer: { id: 'L9999', type: 'water', date: '', secDate: null, track: '', url: `/data/${img}${v}`, bounds, thresholdDb: null },
-    legend: arr(j.overlay.legend).flatMap((x) => (isObj(x) && str(x.class) && str(x.definition) ? [{ cls: String(x.class), colour: str(x.colour), definition: String(x.definition) }] : [])),
+    legend: arr(j.overlay.legend).flatMap((x) => (isObj(x) && str(x.class) && str(x.definition) ? [{ cls: String(x.class), colour: str(x.colour), alpha: finite(x.alpha), definition: String(x.definition) }] : [])),
     pixels: finite(a.pixels), spearman: finite(a.spearman), spearmanDistricts: finite(a.spearman_districts),
     nisarEverHigh: finite(a.nisar_ever_water_pct_where_s1_high), nisarEverZero: finite(a.nisar_ever_water_pct_where_s1_zero),
     caveats: arr(method.caveats).flatMap((x) => str(x) ?? []),
@@ -182,12 +205,76 @@ function parseFusion(j: unknown, generated: string | null): Fusion | null {
       const date = str(x.date), track = str(x.track), label = str(x.label), cls = finite(x.class), pct = finite(x.water_pct);
       return date && track && label && cls != null && pct != null ? [{ date, track, label, cls, pct }] : [];
     }),
-    cropland, perDistrict, s1Threshold: finite(th.s1_frequency),
+    cropland, perDistrict, s1Threshold: finite(th.s1_frequency), nisarThreshold: finite(th.nisar_recurrence),
   };
 }
 
+function parseScoreMaps(j: unknown): ScoreMaps | null {
+  if (!isObj(j) || !isObj(j.areas) || !isObj(j.legend)) return null;
+  const v = isObj(j) && str(j.generated) ? `?v=${encodeURIComponent(String(j.generated))}` : '';
+  let n = 9100;
+  const areas: ScoreMaps['areas'] = {};
+  Object.entries(j.areas).forEach(([id, raw]) => {
+    if (!isObj(raw)) return;
+    const img = str(raw.image), b = parseBounds(raw.bounds);
+    if (!img || !b) return;
+    const sh = isObj(raw.shares) ? raw.shares : {};
+    const excl: Record<string, number> = {};
+    if (isObj(sh.excluded_pct)) Object.entries(sh.excluded_pct).forEach(([k, x]) => { const f = finite(x); if (f != null) excl[k] = f; });
+    areas[id] = { layer: { id: `L${n++}`, type: 'water', date: '', secDate: null, track: '', url: `/data/${img}${v}`, bounds: b, thresholdDb: null, z: 0 }, scoredPct: finite(sh.scored_pct), excl };
+  });
+  const veil: ScoreMaps['veil'] = {};
+  const ns = isObj(j.los_nosignal) ? j.los_nosignal : null;
+  if (ns && isObj(ns.tracks)) Object.entries(ns.tracks).forEach(([k, raw]) => {
+    if (!isObj(raw)) return;
+    const img = str(raw.image), b = parseBounds(raw.bounds);
+    if (img && b) veil[k] = { layer: { id: `L${n++}`, type: 'water', date: '', secDate: null, track: k, url: `/data/${img}${v}`, bounds: b, thresholdDb: null, z: 0 }, pct: finite(raw.nosignal_pct_bangkok_districts) };
+  });
+  const ramp = arr(j.legend.ramp).flatMap((x) => (isObj(x) && str(x.range) && str(x.colour) ? [{ range: String(x.range), colour: String(x.colour) }] : []));
+  const excluded = arr(j.legend.excluded).flatMap((x) => (isObj(x) && str(x.class) && str(x.colour) && str(x.label) ? [{ cls: String(x.class), colour: String(x.colour), label: String(x.label), reason: str(x.reason) ?? '' }] : []));
+  if (!Object.keys(areas).length || !ramp.length) return null;
+  return { ramp, excluded, areas, veil, veilColour: ns ? str(ns.colour) : null };
+}
+
+function parseConfidence(j: unknown, generated: string | null): { confidence: Confidence | null; lookup: Lookup | null; elev: Dataset['elev'] } {
+  if (!isObj(j)) return { confidence: null, lookup: null, elev: null };
+  const v = generated ? `?v=${encodeURIComponent(generated)}` : '';
+  let confidence: Confidence | null = null;
+  const c = j.confidence;
+  if (isObj(c)) {
+    const img = str(c.image), b = parseBounds(c.bounds);
+    const legend = arr(c.legend).flatMap((x) => (isObj(x) && finite(x.id) != null && str(x.class) ? [{ id: finite(x.id) as number, cls: String(x.class), colour: str(x.colour), alpha: finite(x.alpha), conf: str(x.confidence) }] : []));
+    const classPct: Record<string, number> = {};
+    if (isObj(c.class_pct)) Object.entries(c.class_pct).forEach(([k, x]) => { const n = finite(x); if (n != null) classPct[k] = n; });
+    const sanity: Record<string, number> = {};
+    if (isObj(c.sanity)) Object.entries(c.sanity).forEach(([k, x]) => { const n = finite(x); if (n != null) sanity[k] = n; });
+    if (img && b && legend.length) confidence = { layer: { id: 'L9300', type: 'water', date: '', secDate: null, track: '', url: `/data/${img}${v}`, bounds: b, thresholdDb: null, z: 0 }, legend, classPct, sanity };
+  }
+  let lookup: Lookup | null = null;
+  const l = j.lookup;
+  if (isObj(l) && isObj(l.lonlat_to_cell) && isObj(l.lonlat_to_cell.linear) && Array.isArray(l.shape) && isObj(l.class_ids)) {
+    const lin = l.lonlat_to_cell.linear;
+    const col = arr(lin.col).map(finite), row = arr(lin.row).map(finite);
+    const lon0 = finite(l.lonlat_to_cell.lon0), lat0 = finite(l.lonlat_to_cell.lat0), img = str(l.image);
+    const h = finite(l.shape[0]), w = finite(l.shape[1]);
+    const classes: Record<number, string> = {};
+    Object.entries(l.class_ids).forEach(([k, x]) => { if (str(x)) classes[Number(k)] = String(x); });
+    if (img && col.length === 3 && row.length === 3 && !col.includes(null) && !row.includes(null) && lon0 != null && lat0 != null && w && h) {
+      lookup = { url: `/data/${img}${v}`, w, h, lon0, lat0, col: col as number[], row: row as number[], classes };
+    }
+  }
+  let elev: Dataset['elev'] = null;
+  const e = j.elevation_curve;
+  if (isObj(e)) {
+    const bins = (x: unknown): ElevBin[] => arr(x).flatMap((r) => (isObj(r) ? [{ from: finite(r.from_m), to: finite(r.to_m), cells: finite(r.cells) ?? 0, recurrence: finite(r.nisar_recurrence_mean_pct), everWet: finite(r.nisar_ever_wet_pct) }] : []));
+    const all = bins(e.all_land), visible = bins(e.radar_visible_land);
+    if (visible.length > 1) elev = { all, visible, caveat: str(arr(e.caveats)[0]) };
+  }
+  return { confidence, lookup, elev };
+}
+
 export async function loadDataset(): Promise<Dataset> {
-  const [mf, df, gf, ff] = await Promise.all([getJson('/data/manifest.json'), getJson('/data/districts.json'), getJson('/data/bkk_districts.geojson'), getJson('/data/fusion.json')]);
+  const [mf, df, gf, ff, sf] = await Promise.all([getJson('/data/manifest.json'), getJson('/data/districts.json'), getJson('/data/bkk_districts.geojson'), getJson('/data/fusion.json'), getJson('/data/score_maps.json')]);
   const fusion = parseFusion(ff.json, isObj(ff.json) ? str(ff.json.generated) : null);
   const { layers, rangeMm, source } = parseLayers(mf.json);
   const geo = isObj(gf.json) && Array.isArray(gf.json.features) ? (gf.json as unknown as FeatureCollection) : null;
@@ -201,7 +288,7 @@ export async function loadDataset(): Promise<Dataset> {
   const wDates = layers.filter((l) => l.type === 'water').map((l) => l.date).sort();
   const waterSpan = wDates.length ? { from: wDates[0], to: wDates[wDates.length - 1] } : null;
   const districtsOk = isObj(df.json) && arr(df.json.districts).length > 0;
-  return { failed: mf.failed, fusion, districtsOk, gunwSpan, waterSpan, rangeMm, layers, districts, geo, isNisar };
+  return { failed: mf.failed, ...parseConfidence(ff.json, isObj(ff.json) ? str(ff.json.generated) : null), fusion, scoreMaps: parseScoreMaps(sf.json), districtsOk, gunwSpan, waterSpan, rangeMm, layers, districts, geo, isNisar };
 }
 
 export function useDataset(): LoadState {
@@ -312,4 +399,62 @@ export function featureCentre(geo: FeatureCollection | null, code: string): { la
 
 export function fmtYear(y: number, lang: Lang): string {
   return String(lang === 'th' ? y + 543 : y);
+}
+
+export interface CityOutline { lines: number[][][]; rings: number[][][]; closed: boolean; bbox: [number, number, number, number] }
+const memo = new WeakMap<object, CityOutline | null>();
+
+/** Outer boundary of the union of all district polygons: edges that occur once (shared borders occur twice). */
+export function cityOutline(geo: FeatureCollection | null): CityOutline | null {
+  if (!geo) return null;
+  const hit = memo.get(geo);
+  if (hit !== undefined) return hit;
+  const r6 = (n: number) => Math.round(n * 1e6) / 1e6;
+  const edges = new Map<string, { a: number[]; b: number[]; n: number }>();
+  const addRing = (ring: number[][]) => {
+    for (let i = 0; i < ring.length - 1; i++) {
+      const a = [r6(ring[i][0]), r6(ring[i][1])], b = [r6(ring[i + 1][0]), r6(ring[i + 1][1])];
+      if (a[0] === b[0] && a[1] === b[1]) continue;
+      const ka = `${a[0]},${a[1]}`, kb = `${b[0]},${b[1]}`;
+      const key = ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`;
+      const e = edges.get(key);
+      if (e) e.n++; else edges.set(key, { a, b, n: 1 });
+    }
+  };
+  geo.features.forEach((f) => {
+    const g = f.geometry;
+    const polys: number[][][][] = g.type === 'Polygon' ? [g.coordinates as number[][][]] : g.type === 'MultiPolygon' ? (g.coordinates as number[][][][]) : [];
+    polys.forEach((p) => p.forEach(addRing));
+  });
+  const single = [...edges.values()].filter((e) => e.n === 1);
+  if (!single.length) { memo.set(geo, null); return null; }
+  const pk = (p: number[]) => `${p[0]},${p[1]}`;
+  const adj = new Map<string, { e: number; other: number[] }[]>();
+  single.forEach((e, i) => {
+    [[e.a, e.b], [e.b, e.a]].forEach(([p, q]) => { const k = pk(p); const l = adj.get(k) ?? []; l.push({ e: i, other: q }); adj.set(k, l); });
+  });
+  const used = new Set<number>();
+  const rings: number[][][] = [];
+  let closed = true;
+  const lines: number[][][] = [];
+  single.forEach((e0, i0) => {
+    if (used.has(i0)) return;
+    used.add(i0);
+    const path = [e0.a, e0.b];
+    for (;;) {
+      const last = path[path.length - 1];
+      const next = (adj.get(pk(last)) ?? []).find((x) => !used.has(x.e));
+      if (!next) break;
+      used.add(next.e);
+      path.push(next.other);
+    }
+    lines.push(path);
+    const isClosed = pk(path[0]) === pk(path[path.length - 1]);
+    if (isClosed && path.length >= 4) rings.push(path); else closed = false;
+  });
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  single.forEach((x) => [x.a, x.b].forEach((p) => { w = Math.min(w, p[0]); e = Math.max(e, p[0]); s = Math.min(s, p[1]); n = Math.max(n, p[1]); }));
+  const out: CityOutline = { lines, rings, closed, bbox: [w, s, e, n] };
+  memo.set(geo, out);
+  return out;
 }

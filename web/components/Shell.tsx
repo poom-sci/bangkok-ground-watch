@@ -30,7 +30,7 @@ function NavLinks({ tab, onNav, bar }: { tab: Tab; onNav: (t: Tab) => void; bar?
           const active = tab === k;
           return (
             <li key={k}>
-              <a className="nav-item" href={routeSearch({ tab: k, d: null, lat: null, lng: null, area: null, about: false, focus: null })} aria-current={active ? 'page' : undefined} title={label(k)} aria-label={label(k)}
+              <a className="nav-item" href={routeSearch({ tab: k, d: null, lat: null, lng: null, area: null, about: false, focus: null, layer: null })} aria-current={active ? 'page' : undefined} title={label(k)} aria-label={label(k)}
                 onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onNav(k); }}>
                 <Icon /><span className="nav-label">{label(k)}</span>
               </a>
@@ -51,7 +51,7 @@ export default function Shell({ tab, onNav, title, descriptor, badge, lang, onLa
     <div className="shell">
       <a className="skip" href="#main">{t('skip')}</a>
       <aside className="sidebar">
-        <a className="brand" href={routeSearch({ tab: 'overview', d: null, lat: null, lng: null, area: null, about: false, focus: null })} onClick={(e) => { e.preventDefault(); onNav('overview'); }}>
+        <a className="brand" href={routeSearch({ tab: 'overview', d: null, lat: null, lng: null, area: null, about: false, focus: null, layer: null })} onClick={(e) => { e.preventDefault(); onNav('overview'); }}>
           <LogoTile size={32} />
           <span className="brand-text"><span className="brand-name2">{t('title')}</span><span className="brand-by">by SOLSAT</span></span>
         </a>

@@ -36,6 +36,22 @@ LEGEND = [("both", "#00c2a8", f"NISAR recurrence >= {NISAR_T} and Sentinel-1 fre
           ("nisar_only", "#ffd23f", f"NISAR recurrence >= {NISAR_T}, Sentinel-1 frequency < {S1_T}"),
           ("s1_only", "#e83f9b", f"Sentinel-1 frequency >= {S1_T}, NISAR recurrence < {NISAR_T}"),
           ("perm_water", "#5b7fb5", "permanent water in the Sentinel-1 engine (water in at least half of all scenes)")]
+NEITHER, NEITHER_ALPHA = "#c8ccd0", 0.18  # faint neutral tint of the "neither" class
+# Two-radar water confidence: class id (the B channel of the lookup raster), name, colour, alpha, confidence
+DRY_N, DRY_S = 0.05, 0.02   # "confirmed dry" needs NISAR recurrence and Sentinel-1 frequency below these
+BLIND = (50, 10)            # built-up and tree cover: both radars miss water under roofs and canopy
+VISIBLE = (40, 30, 60)      # cropland, grassland, bare: land cover where radar can see standing water
+CLASSES = [(0, "not observed", None, 0.0, None),
+           (1, "confirmed wet", "#00c2a8", 0.8, "high"),
+           (2, "wet this year only", "#ffd23f", 0.8, "medium"),
+           (3, "wet in the record only", "#e83f9b", 0.8, "medium"),
+           (4, "confirmed dry", "#c8ccd0", 0.18, "high"),
+           (5, "uncertain", "#b39ddb", 0.7, "low"),
+           (6, "permanent water", "#5b7fb5", 0.8, None)]
+CONF_PNG, LOOKUP_PNG = "overlays/confidence_bangkok.png", "overlays/lookup_bangkok.png"
+ELEV_EDGES = [0.5, 1, 1.5, 2, 3, 5]
+MIN_BIN = 2000
+REVIEWER_ELEV = {"below 1 m": 47, "1 to 2 m": 34, "2 to 3 m": 15, "3 to 5 m": 1.8}
 REVIEWER = {"pixels": 485000, "spearman": 0.72, "spearman_districts": 0.90, "kappa": 0.57,
             "cropland_water_pct": {"July": 32, "2026-08-13": 14, "2026-10-24": 31},
             "cropland_dry_pct": 62, "cropland_dry_km2": 30, "cropland_back_pct": 70}
@@ -58,6 +74,30 @@ def kappa(a, b):
 
 def pct(n, d):
     return round(100 * float(n) / float(d), 1) if d else None
+
+
+def rgb(colour):
+    return [int(colour[j:j + 2], 16) / 255 for j in (1, 3, 5)]
+
+
+def elev_curve(elev, rec, freq, sel, edges):
+    """Water against elevation over the cells in sel; bins with under MIN_BIN cells merge into a neighbour."""
+    edges = list(edges)
+    while True:
+        b = np.digitize(elev[sel], edges)
+        cnt = np.bincount(b, minlength=len(edges) + 1)
+        small = np.flatnonzero(cnt < MIN_BIN)
+        if not small.size or not edges:
+            break
+        edges.pop(min(small[0], len(edges) - 1))
+    lim = [None] + edges + [None]
+    rows = []
+    for i in range(len(edges) + 1):
+        r, s = rec[sel][b == i], freq[sel][b == i]
+        rows.append({"from_m": lim[i], "to_m": lim[i + 1], "cells": int(r.size),
+                     "nisar_recurrence_mean_pct": pct(r.sum(), r.size), "nisar_ever_wet_pct": pct((r > 0).sum(), r.size),
+                     "s1_frequency_mean_pct": pct(s.sum(), s.size), "s1_high_pct": pct((s >= S1_HIGH).sum(), s.size)})
+    return rows
 
 
 def build():
@@ -158,12 +198,17 @@ def build():
     rgba = np.zeros((H, W, 4))
     for name, colour, _ in LEGEND:
         rgba[cls[name]] = [int(colour[j:j + 2], 16) / 255 for j in (1, 3, 5)] + [0.8]
+    # "neither" gets a faint tint so analysed dry ground does not look like missing data; no_data stays clear
+    rgba[cls["neither"]] = [int(NEITHER[j:j + 2], 16) / 255 for j in (1, 3, 5)] + [NEITHER_ALPHA]
     os.makedirs(f"{OUT}/overlays", exist_ok=True)
     plt.imsave(f"{OUT}/{PNG}", rgba)
     edges_x, edges_y = np.array([c, c + a * W]), np.array([f, f + e * H])  # outer edges of the grid
     overlay = {"image": PNG, "shape": [H, W], "bounds": corners_lonlat(edges_x, edges_y, 32647),
-               "legend": [{"class": k, "colour": col, "definition": d} for k, col, d in LEGEND]
-               + [{"class": "neither", "colour": None, "definition": "neither radar sees water, or too few NISAR scenes (transparent)"}]}
+               "legend": [{"class": k, "colour": col, "alpha": 0.8, "definition": d} for k, col, d in LEGEND]
+               + [{"class": "neither", "colour": NEITHER, "alpha": NEITHER_ALPHA,
+                   "definition": f"analysed, no recurring water in either radar: NISAR recurrence < {NISAR_T} and Sentinel-1 frequency < {S1_T} (faint tint)"},
+                  {"class": "no_data", "colour": None, "alpha": 0,
+                   "definition": f"not analysed: fewer than {MIN_SCENES} valid NISAR scenes in the cell (transparent)"}]}
 
     # D. LOS noise, from the per-pair district means in districts.json
     D = json.load(open(f"{OUT}/districts.json", encoding="utf-8"))["districts"]
@@ -181,6 +226,94 @@ def build():
     los["note"] = ("Per district, the odd and even pair sums of one track do not agree and the two tracks often "
                    "disagree in sign, so the LOS means are mostly atmosphere and are left out of the district index.")
 
+    # E. two-radar water confidence: one fixed rule per cell, no fitting
+    elev = L["elev"]
+    dry = (rec < DRY_N) & (freq < DRY_S)
+    cid = np.full((H, W), 5, dtype=np.uint8)
+    cid[dry] = 4
+    cid[~nb & sb] = 3
+    cid[nb & ~sb] = 2
+    cid[nb & sb] = 1
+    cid[~M] = 0
+    cid[perm] = 6
+    blind = np.isin(lc, BLIND)
+    level = np.full((H, W), "none", dtype="U6")
+    for i, _, _, _, conf_level in CLASSES:
+        if conf_level:
+            level[cid == i] = conf_level
+    level[(cid == 4) & blind] = "medium"
+    rgba = np.zeros((H, W, 4))
+    for i, _, colour, alpha, _ in CLASSES:
+        if colour:
+            rgba[cid == i] = rgb(colour) + [alpha]
+    plt.imsave(f"{OUT}/{CONF_PNG}", rgba)
+    wet, cdry = cid == 1, cid == 4
+    confidence = {
+        "image": CONF_PNG, "shape": [H, W], "bounds": overlay["bounds"],
+        "legend": [{"id": i, "class": name, "colour": colour, "alpha": alpha, "confidence": conf_level}
+                   for i, name, colour, alpha, conf_level in CLASSES],
+        "class_pct": {name: round(100 * float((cid == i).mean()), 2) for i, name, *_ in CLASSES},
+        "confidence_pct": {k: round(100 * float((level == k).mean()), 2) for k in ("high", "medium", "low", "none")},
+        "radar_blind_pct": round(100 * float((blind & M).mean()), 2),
+        "class_by_landcover_pct": {name: {LABELS[int(k)]: pct(((cid == i) & (lc == k)).sum(), (cid == i).sum())
+                                          for k in np.unique(lc)} for i, name, *_ in CLASSES},
+        "sanity": {"confirmed_wet_below_2m_pct": pct((elev[wet] < 2).sum(), wet.sum()),
+                   "observed_land_below_2m_pct": pct((elev[M] < 2).sum(), M.sum()),
+                   "confirmed_dry_built_up_pct": pct((lc[cdry] == 50).sum(), cdry.sum()),
+                   "observed_land_built_up_pct": pct((lc[M] == 50).sum(), M.sum()),
+                   "note": "Elevation is not part of the rule. Land cover only sets the radar blind flag, so built-up ground reading dry is expected and is not proof that it stays dry."},
+    }
+
+    # F. lookup raster for a tapped point: R = NISAR recurrence, G = Sentinel-1 frequency, B = class id
+    look = np.zeros((H, W, 4), dtype=np.uint8)
+    look[..., 0] = np.where(M | (perm & (n >= MIN_SCENES)), np.round(rec * 250), 255)
+    look[..., 1] = np.round(freq * 250)
+    look[..., 2] = cid
+    look[..., 3] = 255
+    plt.imsave(f"{OUT}/{LOOKUP_PNG}", look)
+    # lon/lat -> fractional col,row. Exact = UTM 47N forward, then the affine; fitted here so the browser needs no library.
+    lon0, lat0 = float(np.mean(lon)), float(np.mean(lat))
+    u, v = np.asarray(lon) - lon0, np.asarray(lat) - lat0
+    target = np.c_[(xx.ravel() - c) / a, (yy.ravel() - f) / e]
+    fits = {}
+    for name, A in (("linear", np.c_[np.ones_like(u), u, v]), ("quadratic", np.c_[np.ones_like(u), u, v, u * u, u * v, v * v])):
+        coef, *_ = np.linalg.lstsq(A, target, rcond=None)
+        err = float(np.abs(A @ coef - target).max())
+        fits[name] = {"col": [float(k) for k in coef[:, 0]], "row": [float(k) for k in coef[:, 1]], "max_error_cells": round(err, 4)}
+    use = "linear" if fits["linear"]["max_error_cells"] <= 1 else "quadratic"
+    lookup = {
+        "image": LOOKUP_PNG, "shape": [H, W], "epsg": 32647, "affine": g["affine"], "bounds": overlay["bounds"],
+        "grid": "north-up in UTM zone 47N (EPSG:32647): x = 80 * col + 642560, y = -80 * row + 1545280 at the cell's top-left corner; row 0 is north",
+        "channels": {"R": "NISAR recurrence * 250, rounded (0 to 250); 255 = not observed",
+                     "G": "Sentinel-1 wet-season water frequency * 250, rounded (0 to 250)",
+                     "B": "class id", "A": "255 everywhere, so the PNG is not premultiplied; read it with nearest sampling"},
+        "class_ids": {str(i): name for i, name, *_ in CLASSES},
+        "confidence_rule": "high for confirmed wet and confirmed dry, medium for the two single-sensor classes, low for uncertain; confirmed dry on built-up or tree cover (radar blind) is capped at medium. The lookup has no land cover channel, so the cap needs the confidence map or a land cover layer.",
+        "lonlat_to_cell": {
+            "use": use, "lon0": lon0, "lat0": lat0,
+            "formula": "u = lon - lon0, v = lat - lat0; linear: k0 + k1*u + k2*v; quadratic adds k3*u*u + k4*u*v + k5*v*v. col and row are fractional: take floor(), outside 0..width-1 / 0..height-1 is off the grid",
+            **fits,
+            "error_note": "maximum absolute error over all cell centres against pyproj, in cells of 80 m",
+        },
+    }
+
+    # G. elevation against water (elevation is held out of the confidence rule)
+    vis = M & np.isin(lc, VISIBLE)
+    coarse = [1, 2, 3, 5]
+    elevation_curve = {
+        "all_land": elev_curve(elev, rec, freq, M, ELEV_EDGES),
+        "radar_visible_land": elev_curve(elev, rec, freq, vis, ELEV_EDGES),
+        "radar_visible_classes": [LABELS[k] for k in VISIBLE],
+        "reviewer_bins": {"reviewer_pct": REVIEWER_ELEV,
+                          "all_land": elev_curve(elev, rec, freq, M, coarse)[:4],
+                          "radar_visible_land": elev_curve(elev, rec, freq, vis, coarse)[:4]},
+        "cells": f"not permanent water and at least {MIN_SCENES} valid NISAR scenes; bins with fewer than {MIN_BIN} cells are merged into the next bin",
+        "caveats": ["The Copernicus DEM is a surface model (roofs and tree tops, not ground) with metre-level error, so bins under 1 m wide blur into each other.",
+                    "Built-up and tree cells are radar blind: low water there means the radar cannot see it, not that the ground stays dry.",
+                    "NISAR is one season (July to November 2026); Sentinel-1 is 2017 to 2025.",
+                    "Low ground here is mostly paddy and fish ponds, so the curve mixes land use with flooding."],
+    }
+
     dates = lambda t: [sc["date"] for sc in scenes if sc["track"] == t]
     method = {
         "grid": f"siting engine grid, EPSG:32647, {int(a)} m, {H} x {W} cells, {meta['run_id']}",
@@ -193,6 +326,18 @@ def build():
         "thresholds": {"nisar_recurrence": NISAR_T, "s1_frequency": S1_T, "s1_high": S1_HIGH, "min_scenes": MIN_SCENES},
         "landcover": "ESA WorldCover 2021 on the engine grid, classes with at least 1 % of the grid; water_pct is over the cells valid in all scenes of both tracks (the same ground for every date), water_pct_scene_footprint over all valid cells of that scene",
         "cropland": "cropland cells valid in all scenes of both tracks; minimum = the track's scene with the least cropland water",
+        "confidence_rule": {
+            "classes": {"confirmed wet": f"NISAR recurrence >= {NISAR_T} and Sentinel-1 frequency >= {S1_T}",
+                        "wet this year only": f"NISAR recurrence >= {NISAR_T}, Sentinel-1 frequency < {S1_T}",
+                        "wet in the record only": f"Sentinel-1 frequency >= {S1_T}, NISAR recurrence < {NISAR_T}",
+                        "confirmed dry": f"NISAR recurrence < {DRY_N} and Sentinel-1 frequency < {DRY_S}",
+                        "uncertain": "everything else",
+                        "permanent water": "perm_water of the engine, whatever NISAR says",
+                        "not observed": f"fewer than {MIN_SCENES} valid NISAR scenes"},
+            "confidence": "high = confirmed wet or confirmed dry; medium = wet this year only or wet in the record only; low = uncertain; none = permanent water or not observed",
+            "radar_blind": "land cover built-up (50) or tree cover (10): both radars miss water there, so confirmed dry is capped at medium",
+            "fitting": "none: fixed thresholds, no model",
+        },
         "caveats": [
             "Different years and bands: NISAR is one season (2026), Sentinel-1 is 2017 to 2025. Agreement shows where water recurs, not the same floods.",
             "Dark HV is not only water: runways, smooth bare fields and wet smooth soil read as water in both radars.",
@@ -204,10 +349,14 @@ def build():
     }
     out = {"generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "method": method,
            "agreement": agreement, "landcover_water": landcover, "cropland_cycle": cycle,
-           "districts": sorted(districts, key=lambda d: d["dcode"]), "overlay": overlay, "los_noise": los}
+           "districts": sorted(districts, key=lambda d: d["dcode"]), "overlay": overlay, "los_noise": los,
+           "confidence": confidence, "lookup": lookup, "elevation_curve": elevation_curve}
     with open(f"{OUT}/fusion.json", "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, indent=1)
     print(json.dumps({k: out[k] for k in ("agreement", "cropland_cycle", "los_noise")}, indent=1))
+    print(json.dumps({"class_pct": confidence["class_pct"], "confidence_pct": confidence["confidence_pct"],
+                      "sanity": confidence["sanity"], "lonlat": {k: fits[k]["max_error_cells"] for k in fits},
+                      "elevation_curve": elevation_curve}, indent=1))
 
 
 def check():
@@ -234,6 +383,38 @@ def check():
     img = plt.imread(f"{OUT}/{F['overlay']['image']}")
     assert img.shape == (g["height"], g["width"], 4) and F["overlay"]["shape"] == [g["height"], g["width"]]
     assert {"A112", "D4"} <= set(F["los_noise"]["odd_even_corr"])
+    # confidence map, lookup raster, elevation curve
+    C, K, E = F["confidence"], F["lookup"], F["elevation_curve"]
+    assert abs(sum(C["class_pct"].values()) - 100) < 0.1 and abs(sum(C["confidence_pct"].values()) - 100) < 0.1
+    for name, split in C["class_by_landcover_pct"].items():
+        assert C["class_pct"][name] == 0 or abs(sum(split.values()) - 100) < 0.6, name
+    assert all(0 <= C["sanity"][k] <= 100 for k in C["sanity"] if k.endswith("_pct"))
+    assert plt.imread(f"{OUT}/{C['image']}").shape == img.shape and C["bounds"] == F["overlay"]["bounds"]
+    look = np.round(plt.imread(f"{OUT}/{K['image']}") * 255).astype(int)
+    assert look.shape == img.shape and (look[..., 3] == 255).all() and K["affine"] == g["affine"]
+    ids = {int(k) for k in K["class_ids"]}
+    assert set(np.unique(look[..., 2])) <= ids and look[..., 1].max() <= 250
+    assert ((look[..., 0] <= 250) | (look[..., 0] == 255)).all() and (look[..., 0][look[..., 2] == 0] == 255).all()
+    for i, name in K["class_ids"].items():  # the raster and the reported shares must tell the same story
+        assert abs(100 * (look[..., 2] == int(i)).mean() - C["class_pct"][name]) < 0.01, name
+    rec, frq, cid = look[..., 0] / 250, look[..., 1] / 250, look[..., 2]
+    # R and G are rounded to 1/250, so allow half a step; the class itself must be read from B
+    assert (rec[cid == 1] >= 0.248).all() and (frq[cid == 1] >= 0.098).all() and (rec[cid == 4] <= 0.052).all()
+    # the published lon/lat formula must land on the right cell at the four corners and the centre
+    fit = K["lonlat_to_cell"]
+    assert fit[fit["use"]]["max_error_cells"] <= 1
+    tr = Transformer.from_crs(32647, 4326, always_xy=True)
+    a, _, c, _, e, f = K["affine"]
+    for col, row in ((0.5, 0.5), (g["width"] - 0.5, 0.5), (0.5, g["height"] - 0.5), (g["width"] - 0.5, g["height"] - 0.5), (428.5, 342.5)):
+        lon, lat = tr.transform(c + a * col, f + e * row)
+        u, v = lon - fit["lon0"], lat - fit["lat0"]
+        terms = [1, u, v, u * u, u * v, v * v][:len(fit[fit["use"]]["col"])]
+        got = [sum(k * t for k, t in zip(fit[fit["use"]][ax], terms)) for ax in ("col", "row")]
+        assert abs(got[0] - col) <= 1 and abs(got[1] - row) <= 1, (col, row, got)
+    for key in ("all_land", "radar_visible_land"):
+        assert all(b["cells"] >= 2000 for b in E[key]) and len(E[key]) >= 3
+        assert all(0 <= b[k] <= 100 for b in E[key] for k in b if k.endswith("_pct"))
+    assert sum(b["cells"] for b in E["all_land"]) == A["pixels"]
     print(f"fusion.json ok: {A['pixels']} pixels, {len(F['districts'])} districts, {len(F['landcover_water'])} class rows, PNG {img.shape}")
 
 

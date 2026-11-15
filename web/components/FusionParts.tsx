@@ -1,7 +1,7 @@
 'use client';
 
 import { fmtDate, fmtNum, type Fusion } from '@/lib/data';
-import { landcoverLabel, type Key } from '@/lib/i18n';
+import { dict, landcoverLabel, type Key } from '@/lib/i18n';
 import { useLang, useT } from './ui';
 
 export function FusionCard({ f, districtCount }: { f: Fusion; districtCount: number }) {
@@ -10,8 +10,8 @@ export function FusionCard({ f, districtCount }: { f: Fusion; districtCount: num
   const rank = fmtNum(f.spearman, 2), rankD = fmtNum(f.spearmanDistricts, 2);
   const a = fmtNum(f.nisarEverHigh, 0), b = fmtNum(f.nisarEverZero, 0);
   if (!rank && !rankD && !a) return null;
-  const thr = f.s1Threshold != null ? fmtNum(f.s1Threshold * 100, 0) : null;
-  const caveat = lang === 'en' ? f.caveats.find((c) => /both radars/i.test(c)) ?? null : t('fusion.caveat');
+  const thr = f.s1Threshold != null && f.s1Threshold > 0 ? String(Math.round(1 / f.s1Threshold)) : null;
+  const caveat = t('fusion.caveat');
   return (
     <section className="fusion-card" aria-labelledby="fusion-t">
       <h3 id="fusion-t" className="sub-h">{t('fusion.title')}</h3>
@@ -28,13 +28,20 @@ export function FusionCard({ f, districtCount }: { f: Fusion; districtCount: num
 
 export function FusionLegend({ f }: { f: Fusion }) {
   const t = useT();
+  const lang = useLang();
+  const has = (k: string) => (dict[lang] as Record<string, string>)[k] != null;
+  const labelOf = (c: { cls: string }) => (has(`fusion.cls.${c.cls}`) ? t(`fusion.cls.${c.cls}` as Key) : c.cls);
+  const a = f.nisarThreshold && f.nisarThreshold > 0 ? String(Math.round(1 / f.nisarThreshold)) : null;
+  const b = f.s1Threshold && f.s1Threshold > 0 ? String(Math.round(1 / f.s1Threshold)) : null;
+  const needs = (cls: string) => cls === 'both' || cls === 'nisar_only' || cls === 's1_only';
+  const defOf = (c: { cls: string; definition: string }) => (has(`fusion.def.${c.cls}`) && (!needs(c.cls) || (a && b)) ? t(`fusion.def.${c.cls}` as Key, { a: a ?? '', b: b ?? '' }) : c.definition);
   return (
     <div className="fusion-legend">
       <ul>
         {f.legend.map((c) => (
-          <li key={c.cls} title={c.definition}>
-            <span className={`sw${c.colour ? '' : ' hatch'}`} style={c.colour ? { background: c.colour } : undefined} />
-            <span className="fl-t"><b>{t(`fusion.cls.${c.cls}` as Key)}</b><span className="fl-d">{c.definition}</span></span>
+          <li key={c.cls} title={defOf(c)}>
+            <span className={`sw${c.colour ? '' : ' hatch'}`} style={c.colour ? { background: c.colour, opacity: c.alpha && c.alpha < 0.5 ? 0.5 : 1 } : undefined} />
+            <span className="fl-t"><b>{labelOf(c)}</b><span className="fl-d">{defOf(c)}</span></span>
           </li>
         ))}
       </ul>

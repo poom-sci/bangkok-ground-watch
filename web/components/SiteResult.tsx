@@ -3,7 +3,10 @@
 import { Check, Warn, NoData, Pending, useLang, useT } from './ui';
 import { fmtNum, fmtYear, parseTrack, type District } from '@/lib/data';
 import { landcoverLabel, type Key } from '@/lib/i18n';
-import type { Area, EvState, Res, Suit } from '@/lib/siting';
+import { TwoRadarBlock, ElevationChart } from './ConfidenceParts';
+import type { LookupSample } from '@/lib/lookup';
+import type { Confidence, Dataset } from '@/lib/data';
+import { areaLabel, type Area, type EvState, type Res, type Suit } from '@/lib/siting';
 
 const Info = () => (
   <svg className="icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M8 7.2v4 M8 4.7v.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
@@ -78,7 +81,9 @@ function NisarBlock({ n }: { n: NisarInfo }) {
   );
 }
 
-function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar }: { suit: Suit; ev: EvState; onEvidence: () => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null; example: boolean; nisar: NisarInfo | 'outside' | null }) {
+export interface RadarCtx { sample: LookupSample | null; conf: Confidence | null; elev: Dataset['elev'] }
+
+function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar, exclInfo, radar }: { suit: Suit; ev: EvState; onEvidence: () => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null; example: boolean; nisar: NisarInfo | 'outside' | null; exclInfo?: { colour: string; label: string } | null; radar?: RadarCtx | null }) {
   const t = useT();
   const lang = useLang();
   const excluded = suit.score == null;
@@ -105,16 +110,19 @@ function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar }: { 
         {example && <span className="ex-chip">{t('ex.chip')}</span>}
       </div>
       {!excluded && urban && <p className="comp-sub">{t('engine.score', { n: Math.round(suit.score ?? 0) })}</p>}
-      {!excluded && (
+      {!excluded && urban && <p className="comp-sub">{t('urban.advice')}</p>}
+      {!excluded && !urban && (
         <p className="comp-sub">{t('grade.prov')}{suit.level ? ` · ${t('conf', { level: t(`conf.${suit.level}` as Key) })}` : ''}</p>
       )}
       {example && <p className="ex-note">{t('ex.note')}</p>}
       {urban && <p className="banner urban" role="note"><Warn /><span>{t('flag.urban')}</span></p>}
-      {excluded && reasons.map((c) => <p key={c} className="banner neutral">{t(EXCL_KEYS[c] ?? 'excl.other')}</p>)}
+      {excluded && reasons.map((c, i) => <p key={c} className="banner neutral">{i === 0 && exclInfo && <span className="sw" style={{ background: exclInfo.colour }} aria-hidden="true" />}<span>{i === 0 && exclInfo ? <b>{exclInfo.label}. </b> : null}{t(EXCL_KEYS[c] ?? 'excl.other')}</span></p>)}
+      {radar?.sample && radar.conf && <TwoRadarBlock sample={radar.sample} conf={radar.conf} landcover={suit.landcover} />}
       {!excluded && (
         <>
-          <Comp title={t('comp.flood')} text={floodText} sub={yearsPct ? t('comp.flood.years', { p: yearsPct }) : null} sub2={suit.floodSub} />
+          <Comp title={t('comp.flood')} text={floodText} sub={yearsPct ? t('comp.flood.years', { p: yearsPct, from: years ? fmtYear(years.from, lang) : '2017', to: years ? fmtYear(years.to, lang) : '2025' }) : null} sub2={suit.floodSub} />
           <Comp title={t('comp.elev')} text={h ? t('comp.elev.v', { h }) : null} sub={pf ? t('comp.elev.p', { p: pf }) : null} note={pf ? t('comp.elev.note') : null} sub2={suit.elevSub} />
+          {radar?.elev && suit.elevValue != null && <ElevationChart elev={radar.elev} h={suit.elevValue} />}
           {(things.length > 0 || years) && (
             <section aria-labelledby="things">
               <h3 id="things" className="sub-h">{t('things')}</h3>
@@ -142,8 +150,8 @@ function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar }: { 
   );
 }
 
-export default function SiteResult({ res, ev, onEvidence, onRetry, onGo, saved, onSave, years, example, nisar }: {
-  res: Res; ev: EvState; onEvidence: () => void; onRetry: () => void; onGo: (a: Area) => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null; example: boolean; nisar: NisarInfo | 'outside' | null;
+export default function SiteResult({ res, ev, onEvidence, onRetry, onGo, saved, onSave, years, example, nisar, exclInfo, radar }: {
+  res: Res; ev: EvState; onEvidence: () => void; onRetry: () => void; onGo: (a: Area) => void; saved: boolean | null; onSave: (() => void) | null; years: { from: number; to: number } | null; example: boolean; nisar: NisarInfo | 'outside' | null; exclInfo?: { colour: string; label: string } | null; radar?: RadarCtx | null;
 }) {
   const t = useT();
   if (res.s === 'loading') return <div aria-busy="true" aria-label={t('loading')}><Skeleton /></div>;
@@ -160,17 +168,18 @@ export default function SiteResult({ res, ev, onEvidence, onRetry, onGo, saved, 
       <ul className="arealist">{res.areas.map((a) => <AreaRow key={a.id} area={a} onGo={onGo} />)}</ul>
     </div>
   );
-  if (res.s === 'ok') return <Body suit={res.suit} ev={ev} onEvidence={onEvidence} saved={saved} onSave={onSave} years={years} example={example} nisar={nisar} />;
+  if (res.s === 'ok') return <Body suit={res.suit} ev={ev} onEvidence={onEvidence} saved={saved} onSave={onSave} years={years} example={example} nisar={nisar} exclInfo={exclInfo} radar={radar} />;
   return null;
 }
 
 export function AreaRow({ area, onGo }: { area: Area; onGo: (a: Area) => void }) {
   const t = useT();
+  const lang = useLang();
   const range = area.range ? `${area.range[0].slice(0, 4)} ${t('interval.to')} ${area.range[1].slice(0, 4)}` : null;
   return (
     <li className="arow">
-      <span className="arow-text"><span className="dmain">{area.name}</span>{range && <span className="dsub mono">{range}</span>}</span>
-      <button type="button" className="btn icon-btn" onClick={() => onGo(area)} aria-label={`${t('site.go')}: ${area.name}`} title={t('site.go')}>
+      <span className="arow-text"><span className="dmain">{areaLabel(area.id, area.name, lang)}</span>{range && <span className="dsub mono">{range}</span>}</span>
+      <button type="button" className="btn icon-btn" onClick={() => onGo(area)} aria-label={`${t('site.go')}: ${areaLabel(area.id, area.name, lang)}`} title={t('site.go')}>
         <svg className="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h12 M9 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
     </li>

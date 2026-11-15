@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { Feature, FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { codeOf, featureCentre, type Layer, type District } from '@/lib/data';
-import { useLang } from './ui';
-import { inBox, type Area, type BBox, type Pin } from '@/lib/siting';
+import { codeOf, featureCentre, type CityOutline, type Layer, type District } from '@/lib/data';
+import { useLang, useT } from './ui';
+import { areaLabel, inBox, type Area, type BBox, type Pin } from '@/lib/siting';
 
 export type MapViewMode = 'radar' | 'districts';
 
@@ -37,6 +37,12 @@ interface Props {
   site: SiteProps | null;
   fitKey?: number;
   base: 'sat' | 'map';
+  lang?: 'en' | 'th';
+  extra?: { layer: Layer; opacity: number }[];
+  onMove?: (lng: number, lat: number) => void;
+  city?: CityOutline | null;
+  cityMask?: boolean;
+  districtLines?: boolean;
 }
 
 maplibregl.setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).href);
@@ -76,7 +82,9 @@ const SAT_ATTR = 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_b
 
 export default function MapView(p: Props) {
   const lang = useLang();
+  const loadingText = useT()('base.loading');
   const [rdy, setRdy] = useState(false);
+  const [imgLoading, setImgLoading] = useState(false);
   const labels = useRef<{ el: HTMLElement; m: maplibregl.Marker; lng: number; lat: number }[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -84,6 +92,8 @@ export default function MapView(p: Props) {
   const added = useRef(new Set<string>());
   const hover = useRef<string | null>(null);
   const failed = useRef(new Set<string>());
+  const zOrder = useRef(new Map<string, number>());
+  const cityKeyRef = useRef('');
   const areaMarkers = useRef<maplibregl.Marker[]>([]);
   const pinMarker = useRef<maplibregl.Marker | null>(null);
   const areaKey = useRef('');
@@ -128,30 +138,50 @@ export default function MapView(p: Props) {
     const cur = latest.current;
     if (!map || !ready.current) return;
     const radar = cur.mode === 'radar';
-    for (const l of cur.layers) {
+    const ex = new Map((cur.extra ?? []).map((e) => [e.layer.id, e.opacity]));
+    const all = [...cur.layers, ...(cur.extra ?? []).map((e) => e.layer).filter((l) => !cur.layers.some((x) => x.id === l.id))];
+    for (const l of all) {
+      const wanted = cur.current?.id === l.id || ex.has(l.id);
       if (failed.current.has(l.id)) {
-        if (cur.current?.id !== l.id) failed.current.delete(l.id);
+        if (!wanted) failed.current.delete(l.id);
         continue;
       }
       if (!added.current.has(l.id)) {
-        if (cur.current?.id !== l.id) continue;
+        if (!wanted) continue;
         added.current.add(l.id);
+        zOrder.current.set(l.id, l.z ?? 1);
+        let before = 'dist-fill';
+        if ((l.z ?? 1) === 0) { const up = [...zOrder.current.entries()].find(([id, z]) => z === 1 && id !== l.id && map.getLayer(id)); if (up) before = up[0]; }
         map.addSource(l.id, { type: 'image', url: l.url, coordinates: l.bounds });
         map.addLayer({ id: l.id, type: 'raster', source: l.id, paint: {
           'raster-opacity': 0, 'raster-opacity-transition': { duration: 200, delay: 0 }, 'raster-fade-duration': 0, 'raster-resampling': 'nearest',
-        } }, 'dist-fill');
+        } }, before);
       }
-      map.setPaintProperty(l.id, 'raster-opacity', radar && cur.current?.id === l.id ? cur.opacity / 100 : 0);
+      const op = cur.current?.id === l.id ? (radar ? cur.opacity / 100 : 0) : radar || cur.site ? ex.get(l.id) ?? 0 : 0;
+      map.setPaintProperty(l.id, 'raster-opacity', op);
     }
     const site = cur.site;
     const dv = site ? 'none' : 'visible';
-    map.setLayoutProperty('dist-line', 'visibility', dv);
+    map.setLayoutProperty('dist-line', 'visibility', site && cur.districtLines ? 'visible' : dv);
     map.setLayoutProperty('dist-casing', 'visibility', dv);
     map.setLayoutProperty('dist-hit', 'visibility', dv);
     const av = site ? 'visible' : 'none';
     map.setLayoutProperty('area-fill', 'visibility', av);
     map.setLayoutProperty('area-line', 'visibility', av);
-    const key = site ? site.areas.map((a) => a.id).join('|') : '';
+    map.setLayoutProperty('area-dash', 'visibility', av);
+    const city = cur.city ?? null;
+    const bk = site?.areas.find((a) => a.id === 'bangkok') ?? null;
+    const cityKey = site && city && bk ? `${city.lines.length}|${city.closed}|${bk.bbox.join(',')}` : '';
+    if (cityKey !== cityKeyRef.current) {
+      cityKeyRef.current = cityKey;
+      const cs = map.getSource('city') as maplibregl.GeoJSONSource | undefined;
+      cs?.setData({ type: 'FeatureCollection', features: cityKey && city ? city.lines.map((l) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: l } })) : [] });
+      const ms = map.getSource('citymask') as maplibregl.GeoJSONSource | undefined;
+      const b = bk?.bbox;
+      ms?.setData({ type: 'FeatureCollection', features: cityKey && city && city.closed && b ? [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]], ...city.rings] } }] : [] });
+    }
+    if (map.getLayer('city-line')) { map.setLayoutProperty('city-line', 'visibility', cityKey ? 'visible' : 'none'); map.setLayoutProperty('city-mask', 'visibility', cityKey && cur.cityMask ? 'visible' : 'none'); }
+    const key = site ? `${site.areas.map((a) => a.id).join('|')}|${cur.lang ?? ''}` : '';
     if (key !== areaKey.current) {
       areaKey.current = key;
       areaMarkers.current.forEach((m) => m.remove());
@@ -163,8 +193,8 @@ export default function MapView(p: Props) {
         const el = document.createElement('button');
         el.type = 'button';
         el.className = 'area-chip';
-        el.textContent = a.name;
-        el.setAttribute('aria-label', `${site?.goLabel ?? ''}: ${a.name}`);
+        el.textContent = areaLabel(a.id, a.name, latest.current.lang ?? 'en');
+        el.setAttribute('aria-label', `${site?.goLabel ?? ''}: ${areaLabel(a.id, a.name, latest.current.lang ?? 'en')}`);
         el.onclick = (e) => { e.stopPropagation(); latest.current.site?.onFly(a); };
         areaMarkers.current.push(new maplibregl.Marker({ element: el, anchor: 'top-left', offset: [8, 8] }).setLngLat([a.bbox[0], a.bbox[3]]).addTo(map));
       });
@@ -216,11 +246,24 @@ export default function MapView(p: Props) {
         ],
       },
       center: [100.5, 13.75], zoom: 9,
-      attributionControl: { compact: false },
+      attributionControl: { compact: window.innerWidth < 768 },
     });
     mapRef.current = map;
+    const clampChips = () => {
+      areaMarkers.current.forEach((m) => {
+        const ll = m.getLngLat();
+        const pt = map.project(ll);
+        m.setOffset([Math.max(8, 8 - pt.x), Math.max(8, 8 - pt.y)]);
+      });
+    };
+    map.on('move', clampChips);
+    const setLoad = () => setImgLoading(latest.current.base === 'sat' && !!map.getSource('sat') && !map.isSourceLoaded('sat'));
+    map.on('sourcedata', (e) => { if ((e as { sourceId?: string }).sourceId === 'sat') setLoad(); });
+    map.on('idle', () => setImgLoading(false));
     const chipZoom = () => box.current?.classList.toggle('zoomed-out', map.getZoom() < 9);
     map.on('zoom', chipZoom); map.on('load', chipZoom);
+    const moved = () => { const c = map.getCenter(); latest.current.onMove?.(c.lng, c.lat); };
+    map.on('moveend', moved); map.on('load', moved);
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(box.current);
     if (process.env.NODE_ENV !== 'production') (window as unknown as { __map?: unknown }).__map = map;
@@ -254,17 +297,22 @@ export default function MapView(p: Props) {
         paint: { 'fill-opacity': Number(token('--ramp-opacity')) || 0.8, 'fill-color': ['step', ['get', 'idx'], ramp[0], 20, ramp[1], 40, ramp[2], 60, ramp[3], 80, ramp[4]] } });
       map.addLayer({ id: 'dist-hatch', type: 'fill', source: 'dist', filter: ['<', ['get', 'idx'], 0], layout: { visibility: 'none' },
         paint: { 'fill-pattern': 'hatch' } });
+      map.addSource('city', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addSource('citymask', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: 'city-mask', type: 'fill', source: 'citymask', layout: { visibility: 'none' }, paint: { 'fill-color': token('--bg'), 'fill-opacity': 0.45 } });
       map.addSource('areas', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas', layout: { visibility: 'none' }, paint: { 'fill-color': token('--map-area-fill'), 'fill-opacity': 0 } });
-      map.addLayer({ id: 'area-line', type: 'line', source: 'areas', layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': parseFloat(token('--area-line')) || 1.5, 'line-opacity': 0.8 } });
+      map.addLayer({ id: 'area-dash', type: 'line', source: 'areas', filter: ['==', ['get', 'id'], 'bangkok'], layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': 1, 'line-opacity': 0.45, 'line-dasharray': [3, 3] } });
+      map.addLayer({ id: 'area-line', type: 'line', source: 'areas', filter: ['!=', ['get', 'id'], 'bangkok'], layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': parseFloat(token('--area-line')) || 1.5, 'line-opacity': 0.8 } });
+      map.addLayer({ id: 'city-line', type: 'line', source: 'city', layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': 2 } });
       map.on('click', (e) => { const s = latest.current.site; if (s) s.onPick(e.lngLat.lat, e.lngLat.lng); });
       map.addLayer({ id: 'dist-hit', type: 'fill', source: 'dist', paint: { 'fill-color': 'rgba(0,0,0,0)' } });
       map.addLayer({ id: 'dist-casing', type: 'line', source: 'dist', paint: {
-        'line-color': token('--map-casing'), 'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 6, 0],
+        'line-color': token('--map-casing'), 'line-opacity': ['case', ['boolean', ['feature-state', 'sel'], false], 1, 0.55], 'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 6, 3.4],
       } });
       map.addLayer({ id: 'dist-line', type: 'line', source: 'dist', paint: {
         'line-color': ['case', ['boolean', ['feature-state', 'sel'], false], token('--map-sel'), ['boolean', ['feature-state', 'hover'], false], token('--map-line'), token('--outline')],
-        'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 3, ['boolean', ['feature-state', 'hover'], false], 2, 1],
+        'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 3, ['boolean', ['feature-state', 'hover'], false], 2, 1.5],
       } });
       map.on('click', 'dist-hit', (e) => {
         const code = codeOf(e.features?.[0]?.properties);
@@ -293,7 +341,7 @@ export default function MapView(p: Props) {
       }
       sync();
     });
-    return () => { ro.disconnect(); areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; selPaint.current = ''; added.current.clear(); failed.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
+    return () => { ro.disconnect(); areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; selPaint.current = ''; added.current.clear(); failed.current.clear(); zOrder.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -345,5 +393,10 @@ export default function MapView(p: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.flyKey]);
 
-  return <div ref={box} className="map" role="region" aria-label={p.label} />;
+  return (
+    <>
+      <div ref={box} className="map" role="region" aria-label={p.label} />
+      {imgLoading && p.base === 'sat' && <p className="base-loading" role="status">{loadingText}</p>}
+    </>
+  );
 }

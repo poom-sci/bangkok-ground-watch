@@ -22,6 +22,7 @@ function Tile({ label, value, source, state, small }: { label: string; value: st
 
 function OverviewMap({ data }: { data: Dataset }) {
   const t = useT();
+  const lang = useLang();
   const layer = data.layers.filter((l) => l.type === 'gunw').sort((a, b) => (a.date < b.date ? -1 : 1)).pop();
   const feats = data.geo?.features ?? [];
   if (!layer || !feats.length) return null;
@@ -40,6 +41,10 @@ function OverviewMap({ data }: { data: Dataset }) {
   const W = (e0 - w0) * k, H = n0 - s0;
   const lx = layer.bounds.map((p) => p[0]), ly = layer.bounds.map((p) => p[1]);
   const path = rings.map((r) => `M${r.map((p) => `${X(p[0]).toFixed(4)},${Y(p[1]).toFixed(4)}`).join('L')}Z`).join('');
+  const tk = parseTrack(layer.track);
+  const trackName = tk ? t(tk.dir === 'A' ? 'track.A' : 'track.D', { n: tk.n }) : layer.track;
+  const pair = fmtRange(layer.date, layer.secDate, lang, t('interval.to')) ?? '';
+  const R = data.rangeMm;
   return (
     <figure className="ov-map">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('ov.img.alt')} preserveAspectRatio="xMidYMid meet">
@@ -49,13 +54,19 @@ function OverviewMap({ data }: { data: Dataset }) {
         </svg>
         <path d={path} className="ov-out" fill="none" vectorEffect="non-scaling-stroke" />
       </svg>
+      <figcaption className="ov-cap">
+        <span>{t('ov.caption', { pair, track: trackName })}</span>
+        <span className="los-bar" />
+        {R != null && R > 0 && <span className="los-ticks mono"><span>-{R}</span><span>0</span><span>+{R}</span></span>}
+        <span>{t('legend.los')}</span>
+      </figcaption>
     </figure>
   );
 }
 
-export default function OverviewPage({ data, areas, areasError, sites, greeting, onSite, onGround, onShortlist, onDistrict, onDistricts }: {
+export default function OverviewPage({ onConf, data, areas, areasError, sites, greeting, onSite, onGround, onShortlist, onDistrict, onDistricts }: {
   data: Dataset; areas: Area[] | null; areasError: boolean; sites: SavedSite[]; greeting: string;
-  onSite: () => void; onGround: () => void; onShortlist: () => void; onDistrict: (code: string) => void; onDistricts: () => void;
+  onConf: () => void; onSite: () => void; onGround: () => void; onShortlist: () => void; onDistrict: (code: string) => void; onDistricts: () => void;
 }) {
   const t = useT();
   const lang = useLang();
@@ -66,6 +77,10 @@ export default function OverviewPage({ data, areas, areasError, sites, greeting,
   const latest = [...gunw].sort((a, b) => (a.date < b.date ? -1 : 1)).pop() ?? null;
   const latestWater = water.map((l) => l.date).sort().pop() ?? null;
   const trackLabel = (k: string) => { const p = parseTrack(k); return p ? t(p.dir === 'A' ? 'track.A' : 'track.D', { n: p.n }) : k; };
+  const cp = data.confidence?.classPct;
+  const sumBy = (re: RegExp) => (cp ? Object.entries(cp).filter(([k]) => re.test(k)).reduce((a, [, v]) => a + v, 0) : null);
+  const confA = sumBy(/^confirmed/i), confB = sumBy(/ only$|record only|this year only/i);
+  const confSentence = cp && confA != null && confB != null && (confA > 0 || confB > 0) ? t('ov.conf', { a: fmtNum(confA, 0) ?? '', b: fmtNum(confB, 0) ?? '' }) : null;
   const top = data.districts.filter((d) => d.index != null).sort((a, b) => (b.index ?? 0) - (a.index ?? 0)).slice(0, 5);
   const rated = sites.filter((s) => !s.urban);
   const best = rated.length ? Math.max(...rated.map((s) => s.score)) : null;
@@ -73,6 +88,7 @@ export default function OverviewPage({ data, areas, areasError, sites, greeting,
     <div className="ov">
       <div className="ov-head">
         <h2>{greeting}</h2>
+        {data.fusion && data.fusion.nisarEverHigh != null && <p className="ov-lead">{t('ov.lead', { x: fmtNum(data.fusion.nisarEverHigh, 0) ?? '' })}</p>}
         <p className="top-desc">{t('ov.msg')}</p>
         <div className="ov-hero">
         <OverviewMap data={data} />
@@ -86,6 +102,7 @@ export default function OverviewPage({ data, areas, areasError, sites, greeting,
         </div>
       </div>
       {data.fusion && <FusionCard f={data.fusion} districtCount={data.districts.length} />}
+      {confSentence && <p className="ov-conf">{confSentence} {sitingEnabled && <button type="button" className="link-btn" onClick={onConf}>{t('ov.conf.link')}</button>}</p>}
       <div className="kpis">
         <Tile label={t('kpi.pairs')} value={manifestOk ? String(gunw.length) : null} source="src.manifest" />
         <Tile label={t('kpi.water')} value={manifestOk && water.length ? String(water.length) : null} state={manifestOk && !water.length ? 'pending' : undefined} source="src.manifest" />
@@ -97,6 +114,7 @@ export default function OverviewPage({ data, areas, areasError, sites, greeting,
       <div className="ov-cols">
         <section className="panel2" aria-labelledby="ov-top">
           <h3 id="ov-top" className="sub-h">{t('ov.top')}</h3>
+          <p className="comp-sub">{t('ov.idxNote')}</p>
           {top.length === 0 ? <p className="comp-sub">{data.districtsOk ? t('nodata') : t('nodata.src')}</p> : (
             <ol className="ov-top">
               {top.map((d, i) => (

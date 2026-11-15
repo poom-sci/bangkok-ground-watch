@@ -10,8 +10,8 @@ interface Row { d: District; name: string; rank: number | null; index: number | 
 
 const val = (r: Row, k: SortKey): number | string | null => (k === 'rank' ? r.rank : k === 'index' ? r.index : k === 'name' ? r.name : k === 'losA' ? r.losA : k === 'losD' ? r.losD : k === 'water' ? r.water : k === 'usable' ? r.usable : r.density);
 
-export default function DistrictsPage({ data, tracks, selected, onOpen, onClose, profile, showClose }: {
-  data: Dataset; tracks: string[]; selected: string | null; onOpen: (code: string) => void; onClose: () => void; profile: ReactNode; showClose: boolean;
+export default function DistrictsPage({ selTrack, data, tracks, selected, onOpen, onClose, profile, showClose }: {
+  selTrack: string; data: Dataset; tracks: string[]; selected: string | null; onOpen: (code: string) => void; onClose: () => void; profile: ReactNode; showClose: boolean;
 }) {
   const t = useT();
   const lang = useLang();
@@ -27,7 +27,7 @@ export default function DistrictsPage({ data, tracks, selected, onOpen, onClose,
     const ranked = data.districts.filter((d) => d.index != null).sort((a, b) => (b.index ?? 0) - (a.index ?? 0)).map((d) => d.dcode);
     return data.districts.map((d) => {
       const waters = d.water.flatMap((w) => (w.pct != null ? [w.pct] : []));
-      const coh = d.los.flatMap((x) => (x.coherent != null ? [x.coherent] : []));
+      const coh = d.los.flatMap((x) => (x.track === selTrack && x.coherent != null ? [x.coherent] : []));
       const r = ranked.indexOf(d.dcode);
       return {
         d, name: lang === 'en' ? d.nameEn : d.nameTh, rank: r >= 0 ? r + 1 : null, index: d.index,
@@ -35,7 +35,7 @@ export default function DistrictsPage({ data, tracks, selected, onOpen, onClose,
         water: waters.length ? Math.max(...waters) : d.waterMaxPct, usable: coh.length ? Math.round(coh.reduce((a, b) => a + b, 0) / coh.length) : null, density: d.popDensity,
       };
     });
-  }, [data.districts, lang, asc, desc]);
+  }, [data.districts, lang, asc, desc, selTrack]);
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -79,7 +79,7 @@ export default function DistrictsPage({ data, tracks, selected, onOpen, onClose,
     ...(asc ? [{ key: 'losA' as SortKey, label: t('th.los', { track: trackName(asc) }), num: true, cls: 'c-wide' }] : []),
     ...(desc ? [{ key: 'losD' as SortKey, label: t('th.los', { track: trackName(desc) }), num: true, cls: 'c-wide' }] : []),
     { key: 'water', label: t('th.water'), num: true, cls: '' },
-    { key: 'usable', label: t('th.usableMean'), num: true, cls: '' },
+    { key: 'usable', label: t('th.usableMean', { track: trackName(selTrack) }), num: true, cls: '' },
     { key: 'density', label: t('th.density'), num: true, cls: 'c-wide' },
   ];
   const toggle = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'name' || key === 'rank' ? 'asc' : 'desc' }));

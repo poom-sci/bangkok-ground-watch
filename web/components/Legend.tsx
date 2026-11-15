@@ -6,8 +6,8 @@ import type { MapViewMode } from './MapView';
 
 const signed = (v: number) => (v > 0 ? `+${fmtNum(v, Number.isInteger(v) ? 0 : 1)}` : fmtNum(v, Number.isInteger(v) ? 0 : 1));
 
-export default function Legend({ mode, type, layer, rangeMm, isNisar }: {
-  mode: MapViewMode; type: 'gunw' | 'water'; layer: Layer | null; rangeMm: number | null; isNisar: boolean | null;
+export default function Legend({ mode, type, layer, rangeMm, isNisar, veil }: {
+  mode: MapViewMode; type: 'gunw' | 'water'; layer: Layer | null; rangeMm: number | null; isNisar: boolean | null; veil?: { colour: string; pct: number | null } | null;
 }) {
   const t = useT();
   const demo = isNisar === false ? <Badge nisar={false} /> : null;
@@ -43,7 +43,7 @@ export default function Legend({ mode, type, layer, rangeMm, isNisar }: {
       <div className="los-bar" />
       {ticks && <div className="los-ticks mono">{ticks.map((v) => <span key={v}>{signed(v) ?? ''}</span>)}</div>}
       <p className="legend-cap">{t('legend.los')}</p>
-      <p className="legend-cap">{t('legend.nodata')}</p>
+      {veil ? <p className="veil-row"><span className="sw" style={{ background: veil.colour }} /><span>{veil.pct != null ? t('veil.label', { p: Math.round(veil.pct) }) : t('veil.label0')}</span></p> : <p className="legend-cap">{t('legend.nodata')}</p>}
       {demo}
     </div>
   );

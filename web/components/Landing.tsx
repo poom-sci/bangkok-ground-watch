@@ -5,7 +5,7 @@ import { Check, LangProvider, Segmented, useLang, useT } from './ui';
 import UserMenu, { SignOutDialog } from './UserMenu';
 import { SolsatMark, LogoTile } from './Brand';
 import { fmtDate, fmtMonthRange, loadDataset, parseTrack, type Dataset } from '@/lib/data';
-import { fetchCoverage, sitingEnabled, type Area } from '@/lib/siting';
+import { areaLabel, fetchCoverage, sitingEnabled, type Area } from '@/lib/siting';
 import { useProfile } from '@/lib/user';
 import type { Lang } from '@/lib/i18n';
 
@@ -101,7 +101,7 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
           </div>
           <div className="hero-shot">
             <img src="/landing/hero.webp" srcSet="/landing/hero-800.webp 800w, /landing/hero.webp 1600w" sizes="(min-width: 1120px) 640px, 100vw" width={1600} height={1000}
-              alt="Screenshot of the Bangkok Ground Watch app showing radar ground change over Bangkok" />
+              alt={t('land.hero.alt')} />
           </div>
         </section>
 
@@ -151,7 +151,7 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
                     <Check />
                     <span>
                       {Array.isArray(areas) && areas.length > 0 ? (
-                        <>{t('cov.s2')} <span className="chips-inline">{areas.map((a) => <a key={a.id} className="btn chip-btn" href={`/app/?tab=site&area=${encodeURIComponent(a.id)}`}>{a.name}</a>)}</span></>
+                        <>{t('cov.s2')} <span className="chips-inline">{areas.map((a) => <a key={a.id} className="btn chip-btn" href={`/app/?tab=site&area=${encodeURIComponent(a.id)}`}>{areaLabel(a.id, a.name, lang)}</a>)}</span></>
                       ) : areas === 'fail' ? t('cov.loading') : areas === null ? <span aria-hidden="true">…</span> : t('cov.loading')}
                     </span>
                   </li>

@@ -5,6 +5,7 @@ import { useLang, useT } from './ui';
 import { fmtDate, fmtNum } from '@/lib/data';
 import type { Key } from '@/lib/i18n';
 import type { SavedSite } from '@/lib/user';
+import { areaLabel } from '@/lib/siting';
 
 const BookmarkIcon = () => (
   <svg className="empty-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4h14v24l-7-6-7 6z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
@@ -18,7 +19,7 @@ function Row({ s, onPick, onRemove }: { s: SavedSite; onPick: (s: SavedSite) => 
     <li className="srow">
       <button type="button" className="srow-main" onClick={() => onPick(s)}>
         <span className="srow-text">
-          <span className="dmain">{s.areaName || t('nodata')}</span>
+          <span className="dmain">{s.areaId ? areaLabel(s.areaId, s.areaName, lang) : s.areaName || t('nodata')}</span>
           <span className="dsub">{date ? t('my.saved', { date }) : ''}</span>
         </span>
         <span className="srow-score mono">{fmtNum(s.score, 0) ?? t('nodata')}</span>
@@ -37,7 +38,7 @@ export default function MySites({ sites, guest, limit, onPick, onRemove, onAdd }
   const t = useT();
   const [all, setAll] = useState(false);
   if (guest && sites.length === 0) return (
-    <div className="my-empty"><BookmarkIcon /><p>{t('my.guest')}</p><button type="button" className="btn" onClick={onAdd}>{t('user.add')}</button></div>
+    <div className="my-empty"><BookmarkIcon /><p>{t('my.guest')}</p></div>
   );
   if (sites.length === 0) return (
     <div className="my-empty"><BookmarkIcon /><p className="my-empty-t">{t('my.empty')}</p><p className="comp-sub">{t('my.empty.sub')}</p></div>

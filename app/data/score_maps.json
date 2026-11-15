@@ -1,0 +1,301 @@
+{
+ "generated": "2026-11-15T08:14:50+00:00",
+ "legend": {
+  "ramp": [
+   {
+    "min": 0,
+    "max": 30,
+    "range": "0 to 29",
+    "colour": "#6a0d33",
+    "alpha": 0.75
+   },
+   {
+    "min": 30,
+    "max": 50,
+    "range": "30 to 49",
+    "colour": "#b0243f",
+    "alpha": 0.75
+   },
+   {
+    "min": 50,
+    "max": 70,
+    "range": "50 to 69",
+    "colour": "#e2582c",
+    "alpha": 0.75
+   },
+   {
+    "min": 70,
+    "max": 85,
+    "range": "70 to 84",
+    "colour": "#f6a13a",
+    "alpha": 0.75
+   },
+   {
+    "min": 85,
+    "max": 100,
+    "range": "85 to 100",
+    "colour": "#fdeca0",
+    "alpha": 0.75
+   }
+  ],
+  "ramp_note": "Site suitability score, 0 (poor) to 100 (good). Each step covers min <= score < max; the last step includes 100.",
+  "excluded": [
+   {
+    "class": "perm_water",
+    "colour": "#1c4f9c",
+    "alpha": 0.6,
+    "label": "Permanent water",
+    "reason": "Water in at least half of all Sentinel-1 scenes, so nothing can be built here."
+   },
+   {
+    "class": "water_body",
+    "colour": "#56b4e9",
+    "alpha": 0.6,
+    "label": "Other water body",
+    "reason": "Mapped as water by ESA WorldCover (rivers, canals, ponds, sea)."
+   },
+   {
+    "class": "wetland",
+    "colour": "#009e8e",
+    "alpha": 0.6,
+    "label": "Wetland or mangrove",
+    "reason": "Mapped as herbaceous wetland or mangrove by ESA WorldCover and left unscored."
+   },
+   {
+    "class": "tree_cover",
+    "colour": "#1f6b3b",
+    "alpha": 0.6,
+    "label": "Tree cover",
+    "reason": "Mapped as tree cover by ESA WorldCover; clearing trees for solar is ruled out."
+   },
+   {
+    "class": "protected",
+    "colour": "#9a6fd0",
+    "alpha": 0.6,
+    "label": "Protected area",
+    "reason": "Inside a protected area."
+   },
+   {
+    "class": "other",
+    "colour": "#8c8c8c",
+    "alpha": 0.6,
+    "label": "Not scored",
+    "reason": "No score for another reason, for example missing input data."
+   }
+  ],
+  "excluded_note": "Excluded cells have no score. A cell is counted under the first reason that applies, in the order listed."
+ },
+ "areas": {
+  "bangkok": {
+   "image": "overlays/score_bangkok.png",
+   "shape": [
+    684,
+    857
+   ],
+   "bounds": [
+    [
+     100.31986230603972,
+     13.974294665072808
+    ],
+    [
+     100.95439142263288,
+     13.970018364629018
+    ],
+    [
+     100.95030109995375,
+     13.475518061880823
+    ],
+    [
+     100.31709881956056,
+     13.479637373521948
+    ]
+   ],
+   "shares": {
+    "scored_pct": 64.51,
+    "excluded_pct": {
+     "perm_water": 12.17,
+     "water_body": 5.41,
+     "wetland": 0.78,
+     "tree_cover": 17.13,
+     "protected": 0.0,
+     "other": 0.0
+    },
+    "scored_bands_pct": {
+     "below_50": 11.55,
+     "50_to_69": 2.46,
+     "70_and_above": 85.99
+    },
+    "ramp_pct_of_scored": [
+     11.46,
+     0.09,
+     2.46,
+     0.09,
+     85.9
+    ]
+   }
+  },
+  "ayutthaya": {
+   "image": "overlays/score_ayutthaya.png",
+   "shape": [
+    349,
+    273
+   ],
+   "bounds": [
+    [
+     100.49965808010997,
+     14.402066739671769
+    ],
+    [
+     100.7021745042683,
+     14.40069461964907
+    ],
+    [
+     100.70027970026078,
+     14.148359752115477
+    ],
+    [
+     100.49798849113678,
+     14.149706852079408
+    ]
+   ],
+   "shares": {
+    "scored_pct": 76.08,
+    "excluded_pct": {
+     "perm_water": 2.61,
+     "water_body": 1.72,
+     "wetland": 0.16,
+     "tree_cover": 19.43,
+     "protected": 0.0,
+     "other": 0.0
+    },
+    "scored_bands_pct": {
+     "below_50": 37.72,
+     "50_to_69": 5.1,
+     "70_and_above": 57.17
+    },
+    "ramp_pct_of_scored": [
+     35.3,
+     2.43,
+     5.1,
+     23.66,
+     33.51
+    ]
+   }
+  },
+  "samutsakhon": {
+   "image": "overlays/score_samutsakhon.png",
+   "shape": [
+    279,
+    300
+   ],
+   "bounds": [
+    [
+     100.19972035515133,
+     13.651634220197229
+    ],
+    [
+     100.42157227454632,
+     13.650462724583162
+    ],
+    [
+     100.42037375964578,
+     13.44870041733852
+    ],
+    [
+     100.19870876230341,
+     13.44985396450886
+    ]
+   ],
+   "shares": {
+    "scored_pct": 37.92,
+    "excluded_pct": {
+     "perm_water": 35.19,
+     "water_body": 8.86,
+     "wetland": 0.35,
+     "tree_cover": 17.67,
+     "protected": 0.0,
+     "other": 0.0
+    },
+    "scored_bands_pct": {
+     "below_50": 4.44,
+     "50_to_69": 1.35,
+     "70_and_above": 94.21
+    },
+    "ramp_pct_of_scored": [
+     3.41,
+     1.03,
+     1.35,
+     8.35,
+     85.86
+    ]
+   }
+  }
+ },
+ "los_nosignal": {
+  "definition": "GUNW cells with a usable line-of-sight value in fewer than half of the track's pairs. Usable means the masking of process_to_web.gunw_mm: coherence at least 0.4, phase not exactly 0, inside the largest connected component of the unwrapping.",
+  "colour": "#808080",
+  "alpha": 0.35,
+  "label": "No usable NISAR signal",
+  "reason": "The radar pairs lose coherence here (water, vegetation, fields that change) or the track does not cover the ground.",
+  "tracks": {
+   "A112": {
+    "image": "overlays/los_nosignal_A112.png",
+    "shape": [
+     906,
+     1019
+    ],
+    "pairs": 9,
+    "bounds": [
+     [
+      100.20068006061376,
+      14.0548285644305
+     ],
+     [
+      100.95469715255004,
+      14.049905758409782
+     ],
+     [
+      100.94928620562023,
+      13.395632581589393
+     ],
+     [
+      100.19735476626028,
+      13.400317684473697
+     ]
+    ],
+    "nosignal_pct_window": 73.82,
+    "nosignal_pct_bangkok_districts": 51.39,
+    "bangkok_district_cells": 247295
+   },
+   "D4": {
+    "image": "overlays/los_nosignal_D4.png",
+    "shape": [
+     906,
+     1019
+    ],
+    "pairs": 8,
+    "bounds": [
+     [
+      100.20068006061376,
+      14.0548285644305
+     ],
+     [
+      100.95469715255004,
+      14.049905758409782
+     ],
+     [
+      100.94928620562023,
+      13.395632581589393
+     ],
+     [
+      100.19735476626028,
+      13.400317684473697
+     ]
+    ],
+    "nosignal_pct_window": 55.99,
+    "nosignal_pct_bangkok_districts": 32.88,
+    "bangkok_district_cells": 247295
+   }
+  }
+ }
+}

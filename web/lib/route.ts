@@ -12,6 +12,7 @@ export interface Route {
   area: string | null;
   about: boolean;
   focus: string | null;
+  layer: string | null;
 }
 
 const num = (v: string | null): number | null => { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -34,7 +35,7 @@ export function parseRoute(search: string): { route: Route; bare: boolean } {
   if (d && tab !== 'districts' && !rawTab) tab = 'districts';
   if (!sitingEnabled && (tab === 'site' || tab === 'shortlist')) tab = 'overview';
   return {
-    route: { tab, d: tab === 'districts' ? d : null, lat: tab === 'site' ? lat : null, lng: tab === 'site' ? lng : null, area: tab === 'site' ? q.get('area') : null, about: q.get('about') === '1', focus: tab === 'ground' ? q.get('focus') : null },
+    route: { tab, d: tab === 'districts' ? d : null, lat: tab === 'site' ? lat : null, lng: tab === 'site' ? lng : null, area: tab === 'site' ? q.get('area') : null, about: q.get('about') === '1', focus: tab === 'ground' ? q.get('focus') : null, layer: tab === 'site' ? q.get('layer') : null },
     bare,
   };
 }
@@ -45,6 +46,7 @@ export function routeSearch(r: Route): string {
   if (r.lat != null && r.lng != null) { q.set('lat', String(r.lat)); q.set('lng', String(r.lng)); }
   if (r.area) q.set('area', r.area);
   if (r.focus) q.set('focus', r.focus);
+  if (r.layer) q.set('layer', r.layer);
   if (r.about) q.set('about', '1');
   return `?${q.toString()}`;
 }
@@ -66,7 +68,7 @@ export function useRoute() {
   }, []);
 
   const navigate = useCallback((next: Partial<Route> & { tab?: Tab }, replace = false) => {
-    const merged: Route = { tab: next.tab ?? cur.current.tab, d: null, lat: null, lng: null, area: null, about: false, focus: null, ...next };
+    const merged: Route = { tab: next.tab ?? cur.current.tab, d: null, lat: null, lng: null, area: null, about: false, focus: null, layer: null, ...next };
     const search = routeSearch(merged);
     try { if (replace) window.history.replaceState(null, '', search); else window.history.pushState(null, '', search); } catch { /* ignore */ }
     cur.current = merged;

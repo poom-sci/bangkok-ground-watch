@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-15T07:51:44+00:00",
+ "generated": "2026-11-15T08:26:57+00:00",
  "method": {
   "grid": "siting engine grid, EPSG:32647, 80 m, 684 x 857 cells, run_bangkok_0.3.0_989034ee",
   "alignment": "each engine cell holds exactly 2 x 2 NISAR 40 m samples; block centre is offset +10 m east, +10 m north of the cell centre (asserted)",
@@ -27,6 +27,20 @@
   },
   "landcover": "ESA WorldCover 2021 on the engine grid, classes with at least 1 % of the grid; water_pct is over the cells valid in all scenes of both tracks (the same ground for every date), water_pct_scene_footprint over all valid cells of that scene",
   "cropland": "cropland cells valid in all scenes of both tracks; minimum = the track's scene with the least cropland water",
+  "confidence_rule": {
+   "classes": {
+    "confirmed wet": "NISAR recurrence >= 0.25 and Sentinel-1 frequency >= 0.1",
+    "wet this year only": "NISAR recurrence >= 0.25, Sentinel-1 frequency < 0.1",
+    "wet in the record only": "Sentinel-1 frequency >= 0.1, NISAR recurrence < 0.25",
+    "confirmed dry": "NISAR recurrence < 0.05 and Sentinel-1 frequency < 0.02",
+    "uncertain": "everything else",
+    "permanent water": "perm_water of the engine, whatever NISAR says",
+    "not observed": "fewer than 8 valid NISAR scenes"
+   },
+   "confidence": "high = confirmed wet or confirmed dry; medium = wet this year only or wet in the record only; low = uncertain; none = permanent water or not observed",
+   "radar_blind": "land cover built-up (50) or tree cover (10): both radars miss water there, so confirmed dry is capped at medium",
+   "fitting": "none: fixed thresholds, no model"
+  },
   "caveats": [
    "Different years and bands: NISAR is one season (2026), Sentinel-1 is 2017 to 2025. Agreement shows where water recurs, not the same floods.",
    "Dark HV is not only water: runways, smooth bare fields and wet smooth soil read as water in both radars.",
@@ -1743,27 +1757,38 @@
    {
     "class": "both",
     "colour": "#00c2a8",
+    "alpha": 0.8,
     "definition": "NISAR recurrence >= 0.25 and Sentinel-1 frequency >= 0.1"
    },
    {
     "class": "nisar_only",
     "colour": "#ffd23f",
+    "alpha": 0.8,
     "definition": "NISAR recurrence >= 0.25, Sentinel-1 frequency < 0.1"
    },
    {
     "class": "s1_only",
     "colour": "#e83f9b",
+    "alpha": 0.8,
     "definition": "Sentinel-1 frequency >= 0.1, NISAR recurrence < 0.25"
    },
    {
     "class": "perm_water",
     "colour": "#5b7fb5",
+    "alpha": 0.8,
     "definition": "permanent water in the Sentinel-1 engine (water in at least half of all scenes)"
    },
    {
     "class": "neither",
+    "colour": "#c8ccd0",
+    "alpha": 0.18,
+    "definition": "analysed, no recurring water in either radar: NISAR recurrence < 0.25 and Sentinel-1 frequency < 0.1 (faint tint)"
+   },
+   {
+    "class": "no_data",
     "colour": null,
-    "definition": "neither radar sees water, or too few NISAR scenes (transparent)"
+    "alpha": 0,
+    "definition": "not analysed: fewer than 8 valid NISAR scenes in the cell (transparent)"
    }
   ]
  },
@@ -1780,5 +1805,474 @@
   "sign_disagree_districts": 14,
   "districts_with_both_tracks": 49,
   "note": "Per district, the odd and even pair sums of one track do not agree and the two tracks often disagree in sign, so the LOS means are mostly atmosphere and are left out of the district index."
+ },
+ "confidence": {
+  "image": "overlays/confidence_bangkok.png",
+  "shape": [
+   684,
+   857
+  ],
+  "bounds": [
+   [
+    100.31986230603972,
+    13.974294665072808
+   ],
+   [
+    100.95439142263288,
+    13.970018364629018
+   ],
+   [
+    100.95030109995375,
+    13.475518061880823
+   ],
+   [
+    100.31709881956056,
+    13.479637373521948
+   ]
+  ],
+  "legend": [
+   {
+    "id": 0,
+    "class": "not observed",
+    "colour": null,
+    "alpha": 0.0,
+    "confidence": null
+   },
+   {
+    "id": 1,
+    "class": "confirmed wet",
+    "colour": "#00c2a8",
+    "alpha": 0.8,
+    "confidence": "high"
+   },
+   {
+    "id": 2,
+    "class": "wet this year only",
+    "colour": "#ffd23f",
+    "alpha": 0.8,
+    "confidence": "medium"
+   },
+   {
+    "id": 3,
+    "class": "wet in the record only",
+    "colour": "#e83f9b",
+    "alpha": 0.8,
+    "confidence": "medium"
+   },
+   {
+    "id": 4,
+    "class": "confirmed dry",
+    "colour": "#c8ccd0",
+    "alpha": 0.18,
+    "confidence": "high"
+   },
+   {
+    "id": 5,
+    "class": "uncertain",
+    "colour": "#b39ddb",
+    "alpha": 0.7,
+    "confidence": "low"
+   },
+   {
+    "id": 6,
+    "class": "permanent water",
+    "colour": "#5b7fb5",
+    "alpha": 0.8,
+    "confidence": null
+   }
+  ],
+  "class_pct": {
+   "not observed": 5.06,
+   "confirmed wet": 5.71,
+   "wet this year only": 7.35,
+   "wet in the record only": 0.61,
+   "confirmed dry": 65.09,
+   "uncertain": 4.0,
+   "permanent water": 12.17
+  },
+  "confidence_pct": {
+   "high": 17.47,
+   "medium": 61.29,
+   "low": 4.0,
+   "none": 17.23
+  },
+  "radar_blind_pct": 55.2,
+  "class_by_landcover_pct": {
+   "not observed": {
+    "Tree cover": 18.7,
+    "Shrubland": 0.0,
+    "Grassland": 6.7,
+    "Cropland": 63.5,
+    "Built-up": 9.8,
+    "Bare / sparse vegetation": 0.6,
+    "Permanent water bodies": 0.4,
+    "Herbaceous wetland": 0.3,
+    "Mangroves": 0.0
+   },
+   "confirmed wet": {
+    "Tree cover": 0.5,
+    "Shrubland": 0.0,
+    "Grassland": 2.9,
+    "Cropland": 69.7,
+    "Built-up": 0.4,
+    "Bare / sparse vegetation": 0.9,
+    "Permanent water bodies": 23.0,
+    "Herbaceous wetland": 2.4,
+    "Mangroves": 0.2
+   },
+   "wet this year only": {
+    "Tree cover": 7.0,
+    "Shrubland": 0.0,
+    "Grassland": 12.2,
+    "Cropland": 43.9,
+    "Built-up": 4.4,
+    "Bare / sparse vegetation": 1.1,
+    "Permanent water bodies": 27.1,
+    "Herbaceous wetland": 3.5,
+    "Mangroves": 0.8
+   },
+   "wet in the record only": {
+    "Tree cover": 1.7,
+    "Shrubland": 0.0,
+    "Grassland": 8.5,
+    "Cropland": 37.9,
+    "Built-up": 3.0,
+    "Bare / sparse vegetation": 9.5,
+    "Permanent water bodies": 32.0,
+    "Herbaceous wetland": 6.9,
+    "Mangroves": 0.5
+   },
+   "confirmed dry": {
+    "Tree cover": 23.3,
+    "Shrubland": 0.0,
+    "Grassland": 8.6,
+    "Cropland": 6.0,
+    "Built-up": 58.7,
+    "Bare / sparse vegetation": 0.9,
+    "Permanent water bodies": 1.8,
+    "Herbaceous wetland": 0.3,
+    "Mangroves": 0.5
+   },
+   "uncertain": {
+    "Tree cover": 12.1,
+    "Shrubland": 0.0,
+    "Grassland": 20.7,
+    "Cropland": 31.2,
+    "Built-up": 11.7,
+    "Bare / sparse vegetation": 2.9,
+    "Permanent water bodies": 17.2,
+    "Herbaceous wetland": 3.3,
+    "Mangroves": 1.0
+   },
+   "permanent water": {
+    "Tree cover": 0.0,
+    "Shrubland": 0.0,
+    "Grassland": 1.7,
+    "Cropland": 1.0,
+    "Built-up": 1.5,
+    "Bare / sparse vegetation": 0.9,
+    "Permanent water bodies": 93.4,
+    "Herbaceous wetland": 1.4,
+    "Mangroves": 0.0
+   }
+  },
+  "sanity": {
+   "confirmed_wet_below_2m_pct": 71.2,
+   "observed_land_below_2m_pct": 22.5,
+   "confirmed_dry_built_up_pct": 58.7,
+   "observed_land_built_up_pct": 47.1,
+   "note": "Elevation is not part of the rule. Land cover only sets the radar blind flag, so built-up ground reading dry is expected and is not proof that it stays dry."
+  }
+ },
+ "lookup": {
+  "image": "overlays/lookup_bangkok.png",
+  "shape": [
+   684,
+   857
+  ],
+  "epsg": 32647,
+  "affine": [
+   80.0,
+   0.0,
+   642560.0,
+   0.0,
+   -80.0,
+   1545280.0
+  ],
+  "bounds": [
+   [
+    100.31986230603972,
+    13.974294665072808
+   ],
+   [
+    100.95439142263288,
+    13.970018364629018
+   ],
+   [
+    100.95030109995375,
+    13.475518061880823
+   ],
+   [
+    100.31709881956056,
+    13.479637373521948
+   ]
+  ],
+  "grid": "north-up in UTM zone 47N (EPSG:32647): x = 80 * col + 642560, y = -80 * row + 1545280 at the cell's top-left corner; row 0 is north",
+  "channels": {
+   "R": "NISAR recurrence * 250, rounded (0 to 250); 255 = not observed",
+   "G": "Sentinel-1 wet-season water frequency * 250, rounded (0 to 250)",
+   "B": "class id",
+   "A": "255 everywhere, so the PNG is not premultiplied; read it with nearest sampling"
+  },
+  "class_ids": {
+   "0": "not observed",
+   "1": "confirmed wet",
+   "2": "wet this year only",
+   "3": "wet in the record only",
+   "4": "confirmed dry",
+   "5": "uncertain",
+   "6": "permanent water"
+  },
+  "confidence_rule": "high for confirmed wet and confirmed dry, medium for the two single-sensor classes, low for uncertain; confirmed dry on built-up or tree cover (radar blind) is capped at medium. The lookup has no land cover channel, so the cap needs the confidence map or a land cover layer.",
+  "lonlat_to_cell": {
+   "use": "linear",
+   "lon0": 100.63541984641304,
+   "lat0": 13.725004278311296,
+   "formula": "u = lon - lon0, v = lat - lat0; linear: k0 + k1*u + k2*v; quadratic adds k3*u*u + k4*u*v + k5*v*v. col and row are fractional: take floor(), outside 0..width-1 / 0..height-1 is off the grid",
+   "linear": {
+    "col": [
+     428.49999999999994,
+     1351.9652747850191,
+     -9.36794530228183
+    ],
+    "row": [
+     342.0000000000002,
+     -9.158492320697398,
+     -1382.9170772805185
+    ],
+    "max_error_cells": 0.457
+   },
+   "quadratic": {
+    "col": [
+     428.49629340327436,
+     1351.9659523119508,
+     -9.368172064351654,
+     0.30091710341071265,
+     -5.7356120469669305,
+     -0.33506536190210756
+    ],
+    "row": [
+     342.0948701501763,
+     -9.158468695505583,
+     -1382.916550564695,
+     -2.8036635350846844,
+     -0.6156099178550964,
+     -0.05127436526901661
+    ],
+    "max_error_cells": 0.0031
+   },
+   "error_note": "maximum absolute error over all cell centres against pyproj, in cells of 80 m"
+  }
+ },
+ "elevation_curve": {
+  "all_land": [
+   {
+    "from_m": null,
+    "to_m": 1,
+    "cells": 11522,
+    "nisar_recurrence_mean_pct": 46.8,
+    "nisar_ever_wet_pct": 68.6,
+    "s1_frequency_mean_pct": 11.8,
+    "s1_high_pct": 32.4
+   },
+   {
+    "from_m": 1,
+    "to_m": 1.5,
+    "cells": 45610,
+    "nisar_recurrence_mean_pct": 41.6,
+    "nisar_ever_wet_pct": 59.5,
+    "s1_frequency_mean_pct": 9.7,
+    "s1_high_pct": 29.6
+   },
+   {
+    "from_m": 1.5,
+    "to_m": 2,
+    "cells": 52009,
+    "nisar_recurrence_mean_pct": 28.0,
+    "nisar_ever_wet_pct": 44.0,
+    "s1_frequency_mean_pct": 5.3,
+    "s1_high_pct": 17.8
+   },
+   {
+    "from_m": 2,
+    "to_m": 3,
+    "cells": 112997,
+    "nisar_recurrence_mean_pct": 15.1,
+    "nisar_ever_wet_pct": 27.1,
+    "s1_frequency_mean_pct": 2.5,
+    "s1_high_pct": 8.4
+   },
+   {
+    "from_m": 3,
+    "to_m": 5,
+    "cells": 196198,
+    "nisar_recurrence_mean_pct": 1.8,
+    "nisar_ever_wet_pct": 4.5,
+    "s1_frequency_mean_pct": 0.2,
+    "s1_high_pct": 0.5
+   },
+   {
+    "from_m": 5,
+    "to_m": null,
+    "cells": 66853,
+    "nisar_recurrence_mean_pct": 0.2,
+    "nisar_ever_wet_pct": 0.6,
+    "s1_frequency_mean_pct": 0.0,
+    "s1_high_pct": 0.1
+   }
+  ],
+  "radar_visible_land": [
+   {
+    "from_m": null,
+    "to_m": 1,
+    "cells": 4925,
+    "nisar_recurrence_mean_pct": 43.7,
+    "nisar_ever_wet_pct": 69.5,
+    "s1_frequency_mean_pct": 14.4,
+    "s1_high_pct": 34.7
+   },
+   {
+    "from_m": 1,
+    "to_m": 1.5,
+    "cells": 23418,
+    "nisar_recurrence_mean_pct": 46.2,
+    "nisar_ever_wet_pct": 64.4,
+    "s1_frequency_mean_pct": 13.1,
+    "s1_high_pct": 38.7
+   },
+   {
+    "from_m": 1.5,
+    "to_m": 2,
+    "cells": 27376,
+    "nisar_recurrence_mean_pct": 35.4,
+    "nisar_ever_wet_pct": 54.7,
+    "s1_frequency_mean_pct": 7.7,
+    "s1_high_pct": 25.7
+   },
+   {
+    "from_m": 2,
+    "to_m": 3,
+    "cells": 47618,
+    "nisar_recurrence_mean_pct": 27.4,
+    "nisar_ever_wet_pct": 47.8,
+    "s1_frequency_mean_pct": 5.2,
+    "s1_high_pct": 17.3
+   },
+   {
+    "from_m": 3,
+    "to_m": null,
+    "cells": 19735,
+    "nisar_recurrence_mean_pct": 8.8,
+    "nisar_ever_wet_pct": 21.9,
+    "s1_frequency_mean_pct": 0.8,
+    "s1_high_pct": 2.7
+   }
+  ],
+  "radar_visible_classes": [
+   "Cropland",
+   "Grassland",
+   "Bare / sparse vegetation"
+  ],
+  "reviewer_bins": {
+   "reviewer_pct": {
+    "below 1 m": 47,
+    "1 to 2 m": 34,
+    "2 to 3 m": 15,
+    "3 to 5 m": 1.8
+   },
+   "all_land": [
+    {
+     "from_m": null,
+     "to_m": 1,
+     "cells": 11522,
+     "nisar_recurrence_mean_pct": 46.8,
+     "nisar_ever_wet_pct": 68.6,
+     "s1_frequency_mean_pct": 11.8,
+     "s1_high_pct": 32.4
+    },
+    {
+     "from_m": 1,
+     "to_m": 2,
+     "cells": 97619,
+     "nisar_recurrence_mean_pct": 34.4,
+     "nisar_ever_wet_pct": 51.2,
+     "s1_frequency_mean_pct": 7.3,
+     "s1_high_pct": 23.3
+    },
+    {
+     "from_m": 2,
+     "to_m": 3,
+     "cells": 112997,
+     "nisar_recurrence_mean_pct": 15.1,
+     "nisar_ever_wet_pct": 27.1,
+     "s1_frequency_mean_pct": 2.5,
+     "s1_high_pct": 8.4
+    },
+    {
+     "from_m": 3,
+     "to_m": 5,
+     "cells": 196198,
+     "nisar_recurrence_mean_pct": 1.8,
+     "nisar_ever_wet_pct": 4.5,
+     "s1_frequency_mean_pct": 0.2,
+     "s1_high_pct": 0.5
+    }
+   ],
+   "radar_visible_land": [
+    {
+     "from_m": null,
+     "to_m": 1,
+     "cells": 4925,
+     "nisar_recurrence_mean_pct": 43.7,
+     "nisar_ever_wet_pct": 69.5,
+     "s1_frequency_mean_pct": 14.4,
+     "s1_high_pct": 34.7
+    },
+    {
+     "from_m": 1,
+     "to_m": 2,
+     "cells": 50794,
+     "nisar_recurrence_mean_pct": 40.4,
+     "nisar_ever_wet_pct": 59.2,
+     "s1_frequency_mean_pct": 10.2,
+     "s1_high_pct": 31.7
+    },
+    {
+     "from_m": 2,
+     "to_m": 3,
+     "cells": 47618,
+     "nisar_recurrence_mean_pct": 27.4,
+     "nisar_ever_wet_pct": 47.8,
+     "s1_frequency_mean_pct": 5.2,
+     "s1_high_pct": 17.3
+    },
+    {
+     "from_m": 3,
+     "to_m": null,
+     "cells": 19735,
+     "nisar_recurrence_mean_pct": 8.8,
+     "nisar_ever_wet_pct": 21.9,
+     "s1_frequency_mean_pct": 0.8,
+     "s1_high_pct": 2.7
+    }
+   ]
+  },
+  "cells": "not permanent water and at least 8 valid NISAR scenes; bins with fewer than 2000 cells are merged into the next bin",
+  "caveats": [
+   "The Copernicus DEM is a surface model (roofs and tree tops, not ground) with metre-level error, so bins under 1 m wide blur into each other.",
+   "Built-up and tree cells are radar blind: low water there means the radar cannot see it, not that the ground stays dry.",
+   "NISAR is one season (July to November 2026); Sentinel-1 is 2017 to 2025.",
+   "Low ground here is mostly paddy and fish ponds, so the curve mixes land use with flooding."
+  ]
  }
 }

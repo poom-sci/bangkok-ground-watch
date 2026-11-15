@@ -52,6 +52,10 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 
 **What drives the change.** In the area both NISAR tracks cover (150 km2 of cropland), cropland water fell from 32 percent on 8 July to 14 percent on 13 August and returned to 31 percent on 24 October, while built-up land stayed under 2 percent. About 62 percent (30 km2) of the cropland that was water in July read dry in August, and 70 percent of that returned by October. The surface water change inside Bangkok follows the rice season, not flooding of the city. A dry reading on cropland can mean crop canopy raising the HV backscatter, not drainage.
 
+**Two-radar confidence.** Every 80 m cell of the Bangkok grid is classed by whether NISAR (2026) and Sentinel-1 (2017 to 2025) both saw water, only one did, or neither: 5.7 percent is confirmed wet by both, 7.4 percent was wet this year only, 0.6 percent only in the record, 65.1 percent is confirmed dry, 12.2 percent is permanent water. The rule holds up against elevation: 71 percent of confirmed-wet land lies below 2 m, against 22.5 percent of all observed land. Both radars are blind to water under buildings and trees (55 percent of the grid), so confidence there is capped at medium.
+
+**How low is too low.** On land the radar can see (cropland, grassland, bare ground), NISAR saw water in 44 percent of scenes below 1 m, 40 percent at 1 to 2 m, 27 percent at 2 to 3 m and 9 percent above 3 m. The elevation is a surface model with metre-level error.
+
 **Why ground change is shown but not ranked.** Per-pair LOS means are dominated by atmosphere: sums of alternating pairs cancel (correlation -0.82 on track 112 and -0.91 on track 4) and the two tracks disagree in sign in 14 of 49 districts. NISAR's ionosphere and troposphere correction layers are not applied. Roughly 10 to 12 months of NISAR acquisitions would be needed before a rate of a few millimetres per year could be separated from this noise.
 
 ### How it works

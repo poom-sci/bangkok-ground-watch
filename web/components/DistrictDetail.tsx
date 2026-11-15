@@ -203,6 +203,7 @@ export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack
             {fusion.recurrence != null && <div className="stat"><dt>{t('fq.nisar')}</dt><dd><span className="stat-val"><span className="mono">{fmtNum(fusion.recurrence * 100, 1)}</span> %</span></dd></div>}
           </dl>
         )}
+        {fusion && fusion.recurrence != null && fusion.s1 != null && <p className="comp-sub">{t('fq.note')}</p>}
         <p className="comp-sub">{t('d.waterCaveat')}</p>
       </Disclosure>
       <Disclosure title={pop ? t('d.people', { pop }) : t('d.pop')}>

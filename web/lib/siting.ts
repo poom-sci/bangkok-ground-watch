@@ -142,3 +142,6 @@ export function useSite(active: boolean) {
 }
 
 export const inBox = (b: BBox, lat: number, lng: number) => lng >= b[0] && lng <= b[2] && lat >= b[1] && lat <= b[3];
+
+const AREA_TH: Record<string, string> = { ayutthaya: 'อยุธยา', bangkok: 'กรุงเทพฯ', samutsakhon: 'สมุทรสาคร' };
+export const areaLabel = (id: string, name: string, lang: 'en' | 'th') => (lang === 'th' ? AREA_TH[id] ?? name : name);
