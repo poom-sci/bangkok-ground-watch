@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { Feature, FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { codeOf, type Layer, type District } from '@/lib/data';
+import { codeOf, featureCentre, type Layer, type District } from '@/lib/data';
+import { useLang } from './ui';
 import { inBox, type Area, type BBox, type Pin } from '@/lib/siting';
 
 export type MapViewMode = 'radar' | 'districts';
@@ -35,6 +36,7 @@ interface Props {
   label: string;
   site: SiteProps | null;
   fitKey?: number;
+  base: 'sat' | 'map';
 }
 
 maplibregl.setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).href);
@@ -69,7 +71,13 @@ function boundsOf(f: Feature): maplibregl.LngLatBoundsLike | null {
   return b.isEmpty() ? null : b;
 }
 
+export const SAT_PAINT = { 'raster-brightness-max': 0.65, 'raster-saturation': -0.35, 'raster-contrast': 0.1 };
+const SAT_ATTR = 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noopener noreferrer">EOX IT Services GmbH</a> (contains modified Copernicus Sentinel data 2016)';
+
 export default function MapView(p: Props) {
+  const lang = useLang();
+  const [rdy, setRdy] = useState(false);
+  const labels = useRef<{ el: HTMLElement; m: maplibregl.Marker; lng: number; lat: number }[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const ready = useRef(false);
@@ -170,6 +178,10 @@ export default function MapView(p: Props) {
       pe.setAttribute('aria-label', site.pinLabel);
     } else if (pinMarker.current) { pinMarker.current.remove(); pinMarker.current = null; }
     if (site) site.centerRef.current = () => { const c = map.getCenter(); return { lat: c.lat, lng: c.lng }; };
+    if (map.getLayer('sat')) {
+      map.setLayoutProperty('sat', 'visibility', cur.base === 'sat' ? 'visible' : 'none');
+      map.setLayoutProperty('base', 'visibility', cur.base === 'map' ? 'visible' : 'none');
+    }
     const vis = radar ? 'none' : 'visible';
     const selColor = radar ? token('--map-sel') : token('--text');
     if (selColor !== selPaint.current && map.getLayer('dist-line')) {
@@ -193,10 +205,15 @@ export default function MapView(p: Props) {
       container: box.current,
       style: {
         version: 8,
-        sources: { base: { type: 'raster', tileSize: 256, maxzoom: 19,
-          attribution: '© OpenStreetMap contributors',
-          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'] } },
-        layers: [{ id: 'base', type: 'raster', source: 'base', paint: { 'raster-saturation': -1, 'raster-brightness-min': 0.72, 'raster-brightness-max': 0.04, 'raster-contrast': 0.1 } }],
+        sources: {
+          base: { type: 'raster', tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'] },
+          sat: { type: 'raster', tileSize: 256, maxzoom: 14, attribution: SAT_ATTR, tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'] },
+        },
+        layers: [
+          { id: 'bg', type: 'background', paint: { 'background-color': token('--bg') } },
+          { id: 'sat', type: 'raster', source: 'sat', layout: { visibility: latest.current.base === 'sat' ? 'visible' : 'none' }, paint: SAT_PAINT },
+          { id: 'base', type: 'raster', source: 'base', layout: { visibility: latest.current.base === 'map' ? 'visible' : 'none' }, paint: { 'raster-saturation': -1, 'raster-brightness-min': 0.72, 'raster-brightness-max': 0.04, 'raster-contrast': 0.1 } },
+        ],
       },
       center: [100.5, 13.75], zoom: 9,
       attributionControl: { compact: false },
@@ -267,6 +284,7 @@ export default function MapView(p: Props) {
         hover.current = null;
       });
       ready.current = true;
+      setRdy(true);
       queueMicrotask(() => { if (latest.current.selected && latest.current.flyKey > 0) flyToSelected(); flySite(); });
       if (!fitDistricts(0) && pts.length) {
         const b = new maplibregl.LngLatBounds(pts[0], pts[0]);
@@ -280,6 +298,40 @@ export default function MapView(p: Props) {
   }, []);
 
   useEffect(() => { sync(); });
+
+  // district name labels for the satellite base (HTML markers, simple collision hiding)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready.current) return;
+    labels.current.forEach((l) => l.m.remove());
+    labels.current = [];
+    if (p.base !== 'sat' || !p.geo || p.site) return;
+    p.districts.forEach((d) => {
+      const c = featureCentre(p.geo, d.dcode);
+      if (!c) return;
+      const el = document.createElement('span');
+      el.className = 'dlabel';
+      el.textContent = lang === 'en' ? d.nameEn : d.nameTh;
+      el.style.display = 'none';
+      const m = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([c.lng, c.lat]).addTo(map);
+      labels.current.push({ el, m, lng: c.lng, lat: c.lat });
+    });
+    const place = () => {
+      const show = map.getZoom() >= 10.5;
+      const boxes: DOMRect[] = [];
+      labels.current.forEach((l) => {
+        if (!show) { l.el.style.display = 'none'; return; }
+        l.el.style.display = '';
+        const r = l.el.getBoundingClientRect();
+        const clash = boxes.some((b) => !(r.right < b.left || r.left > b.right || r.bottom < b.top || r.top > b.bottom));
+        if (clash) l.el.style.display = 'none'; else boxes.push(r);
+      });
+    };
+    place();
+    map.on('moveend', place); map.on('zoomend', place);
+    return () => { map.off('moveend', place); map.off('zoomend', place); labels.current.forEach((l) => l.m.remove()); labels.current = []; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.base, p.geo, p.districts, p.site === null, lang, rdy]);
 
   useEffect(() => { if (p.fitKey) fitDistricts(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps

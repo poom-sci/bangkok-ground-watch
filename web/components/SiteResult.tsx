@@ -46,7 +46,7 @@ function Comp({ title, text, sub, sub2, note }: { title: string; text: string | 
   );
 }
 
-export interface NisarInfo { district: District; tracks: string[]; track: string; waterAvailable: boolean }
+export interface NisarInfo { district: District; tracks: string[]; track: string; waterAvailable: boolean; recurrence?: number | null }
 
 function NisarBlock({ n }: { n: NisarInfo }) {
   const t = useT();
@@ -70,6 +70,7 @@ function NisarBlock({ n }: { n: NisarInfo }) {
         <div className="nisar-row"><dt>{t('nisar.water')}</dt><dd>{wMax ? <><span className="mono">{wMax}</span> %</> : n.waterAvailable ? <NoData /> : <Pending />}</dd></div>
         <div className="nisar-row"><dt>{t('d.usable', { scope: label(n.track), p: usable ?? '' }).replace(/:.*$/, '')}</dt><dd>{usable != null ? <><span className="mono">{usable}</span> %</> : <NoData />}</dd></div>
       </dl>
+      {n.recurrence != null && <p className="comp-sub">{t('nisar.recur', { p: fmtNum(n.recurrence * 100, 1) ?? '' })}</p>}
       {usable != null && usable < 50 && <p className="comp-sub">{t('d.lowUsable', { p: usable })}</p>}
       <p className="comp-sub">{t('nisar.note')}</p>
       <a className="btn" href={`/app/?mode=ground&d=${encodeURIComponent(d.dcode)}`}>{t('nisar.open', { district: name })}</a>

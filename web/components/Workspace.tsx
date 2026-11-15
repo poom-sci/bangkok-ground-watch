@@ -19,6 +19,7 @@ import Scrubber from './Scrubber';
 import Legend from './Legend';
 import DistrictDetail from './DistrictDetail';
 import AboutDialog from './AboutDialog';
+import { FusionCard, FusionLegend, WaterByCover } from './FusionParts';
 import type { MapViewMode, SiteProps } from './MapView';
 import type { Key, Lang } from '@/lib/i18n';
 
@@ -93,6 +94,10 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const [type, setType] = useState<LayerType>(has.gunw ? 'gunw' : 'water');
   const [track, setTrack] = useState(() => bestTrack(has.gunw ? 'gunw' : 'water'));
   const [date, setDate] = useState(() => { const d = datesOf(has.gunw ? 'gunw' : 'water', bestTrack(has.gunw ? 'gunw' : 'water')); return d[d.length - 1] ?? ''; });
+  const [fusionOn, setFusionOn] = useState(false);
+  const [base, setBaseState] = useState<'sat' | 'map'>('sat');
+  useEffect(() => { try { const v = localStorage.getItem('bgw-base'); if (v === 'sat' || v === 'map') setBaseState(v); } catch { /* storage unavailable */ } }, []);
+  const setBase = (b: 'sat' | 'map') => { setBaseState(b); try { localStorage.setItem('bgw-base', b); } catch { /* storage unavailable */ } };
   const [opacity, setOpacity] = useState(85);
   const [mapView, setMapView] = useState<MapViewMode>('radar');
   const [playing, setPlaying] = useState(false);
@@ -163,7 +168,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   const loaded = useRef(new Set<string>());
   const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
   const nextUrl = data.layers.find((l) => l.type === type && l.track === track && l.date === dates[index + 1])?.url ?? null;
-  const curUrl = radar && isGround ? current?.url ?? null : null;
+  const curUrl = radar && isGround && !fusionOn ? current?.url ?? null : null;
   useEffect(() => {
     if (!curUrl || loaded.current.has(curUrl)) { setLoadingUrl(null); return; }
     let live = true;
@@ -305,12 +310,19 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
       {popOpen && <div id={popId} className="popover2 glass">{content}</div>}
     </div>
   );
+  const baseControl = (
+    <div className="field">
+      <span className="field-label">{t('base.label')}</span>
+      <Segmented label={t('base.label')} value={base} onChange={setBase} options={[{ value: 'sat', label: t('base.sat') }, { value: 'map', label: t('base.map') }]} />
+    </div>
+  );
   const groundDisplay = (
     <div className="display-body">
       <div className="field">
         <label className="field-label" htmlFor={`${popId}-op`}>{t('opacity')} <span className="mono">{opacity}%</span></label>
         <input id={`${popId}-op`} className="range" type="range" min={20} max={100} step={5} value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} />
       </div>
+      {baseControl}
       <div className="field">
         <span className="field-label">{t('mapview')}</span>
         <Segmented label={t('mapview')} value={mapView} onChange={(m) => { setMapView(m); setPlaying(false); }}
@@ -320,11 +332,15 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
   );
   const siteDisplay = (
     <div className="display-body">
+      {baseControl}
       <label className="switch"><input type="checkbox" role="switch" checked={overlayOn} onChange={(e) => setOverlayOn(e.target.checked)} /><span>{t('site.overlay')}</span></label>
       <p className="comp-sub">{t('site.overlay.note')}</p>
     </div>
   );
-  const layerOptions = [{ value: 'gunw' as LayerType, label: t('layer.los'), disabled: !has.gunw }, { value: 'water' as LayerType, label: t('layer.water'), disabled: !has.water }];
+  type LayerChoice = LayerType | 'fusion';
+  const layerOptions: { value: LayerChoice; label: string; disabled: boolean }[] = [{ value: 'gunw', label: t('layer.los'), disabled: !has.gunw }, { value: 'water', label: t('layer.water'), disabled: !has.water }, ...(data.fusion ? [{ value: 'fusion' as LayerChoice, label: t('layer.fusion'), disabled: false }] : [])];
+  const onLayer = (v: LayerChoice) => { if (v === 'fusion') { setFusionOn(true); setPlaying(false); } else { setFusionOn(false); changeType(v); } };
+  const showFusion = fusionOn && !!data.fusion;
 
   const titleKey: Record<Tab, Key> = { overview: 'nav.overview', site: 'mode.site', ground: 'mode.ground', districts: 'nav.districts', shortlist: 'nav.shortlist' };
   const descKey: Record<Tab, Key> = { overview: 'desc.overview', site: 'start.site', ground: 'start.ground', districts: 'desc.districts', shortlist: 'desc.shortlist' };
@@ -341,11 +357,11 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
       : <div><button type="button" className="btn back" onClick={() => setEvOpen(false)}>{t('back')}</button><p className="comp-sub">{site.ev.s === 'error' ? t('state.error') : t('loading')}</p></div>
   ) : (
     <SiteResult res={site.res} ev={site.ev} onEvidence={() => setEvOpen(true)} onRetry={() => site.pin && site.check(site.pin)} onGo={goArea} saved={record() ? saved : null} onSave={record() ? onSave : null}
-      example={isExample} nisar={site.res.s === 'ok' ? nisarDistrict ? { district: nisarDistrict, tracks: allTracks, track, waterAvailable } : 'outside' : null} years={resultYears} />
+      example={isExample} nisar={site.res.s === 'ok' ? nisarDistrict ? { district: nisarDistrict, tracks: allTracks, track, waterAvailable, recurrence: data.fusion?.perDistrict[nisarDistrict.dcode]?.recurrence ?? null } : 'outside' : null} years={resultYears} />
   );
 
   const mapPage = (
-    <section className="mappage" hidden={!(isSite || isGround)} aria-label={t(titleKey[tab])}>
+    <section className={`mappage${isGround && data.fusion && (showFusion || type === 'water') ? ' has-extras' : ''}`} hidden={!(isSite || isGround)} aria-label={t(titleKey[tab])}>
       <div className="toolbar-row" role="toolbar" aria-label={t('display')}>
         {isSite ? (
           <>
@@ -358,8 +374,8 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
           </>
         ) : (
           <>
-            <Segmented label={t('layer.label')} options={layerOptions} value={type} onChange={changeType} disabled={!radar} />
-            <Segmented label={t('track.label')} options={trackOptions} value={track} onChange={changeTrack} />
+            <Segmented label={t('layer.label')} options={layerOptions} value={showFusion ? 'fusion' : type} onChange={onLayer} disabled={!radar && !showFusion} />
+            {!showFusion && <Segmented label={t('track.label')} options={trackOptions} value={track} onChange={changeTrack} />}
             {popWrap(groundDisplay)}
           </>
         )}
@@ -367,8 +383,8 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
       <div className="map-row">
         <div className="map-panel">
           {mapShown && (
-            <MapView layers={data.layers} current={isSite ? (overlayOn ? latestLos : null) : radar ? current : null} opacity={isSite ? 60 : opacity} mode={isSite ? 'radar' : mapView}
-              geo={data.geo} districts={data.districts} selected={focusDistrict} flyKey={flyKey} padding={padding} onSelect={pickGround} onOverlayError={() => setToast(true)} label={t('map.label')} site={siteProps} fitKey={fitKey} />
+            <MapView layers={data.fusion ? [...data.layers, data.fusion.layer] : data.layers} current={isSite ? (overlayOn ? latestLos : null) : showFusion ? data.fusion!.layer : radar ? current : null} opacity={isSite ? 60 : opacity} mode={isSite ? 'radar' : mapView}
+              geo={data.geo} districts={data.districts} selected={focusDistrict} flyKey={flyKey} padding={padding} onSelect={pickGround} onOverlayError={() => setToast(true)} label={t('map.label')} site={siteProps} fitKey={fitKey} base={base} />
           )}
           {isSite && <div className="crosshair" role="img" aria-label={t('site.crosshair')} />}
           {isSite && overlayOn && <div className="map-legend glass"><Legend mode="radar" type="gunw" layer={latestLos} rangeMm={data.rangeMm} isNisar={data.isNisar} /></div>}
@@ -384,7 +400,8 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
           </aside>
         )}
       </div>
-      {isGround && (
+      {isGround && showFusion && data.fusion && <div className="ground-bar fusion-bar"><FusionLegend f={data.fusion} /></div>}
+      {isGround && !showFusion && (
         <div className="ground-bar">
           <div className="gb-scrub">
             {!radar && <p className="loading-chip">{t('view.radarOnly')}</p>}
@@ -394,12 +411,17 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
           <div className="gb-legend"><Legend mode={mapView} type={type} layer={current} rangeMm={data.rangeMm} isNisar={data.isNisar} />{missing.length > 0 && data.districts.length > 0 && <p className="track-note">{t('track.missing', { n: missing.length, names: missing.map((d) => (lang === 'en' ? d.nameEn : d.nameTh)).join(', ') })}</p>}</div>
         </div>
       )}
+      {isGround && data.fusion && (showFusion || type === 'water') && (
+        <div className="extras">
+          {showFusion ? <FusionCard f={data.fusion} districtCount={data.districts.length} /> : <WaterByCover f={data.fusion} track={track} />}
+        </div>
+      )}
     </section>
   );
 
   const profileNode = detail ? (
     <DistrictDetail d={detail} rank={ranked.indexOf(detail.dcode) + 1} rankOf={ranked.length} tracks={allTracks} track={track} onTrack={changeTrack} waterAvailable={waterAvailable}
-      secDateOf={secDateOf} trackSpan={trackSpan} onBack={closeDistrict} backOnly={!wide || phone} backGround={fromMap === detail.dcode ? () => navigate({ tab: 'ground', focus: detail.dcode }) : null} onCheck={sitingEnabled && canCheckHere(detail.dcode) ? () => checkHere(detail.dcode) : null} />
+      secDateOf={secDateOf} trackSpan={trackSpan} onBack={closeDistrict} backOnly={!wide || phone} backGround={fromMap === detail.dcode ? () => navigate({ tab: 'ground', focus: detail.dcode }) : null} onCheck={sitingEnabled && canCheckHere(detail.dcode) ? () => checkHere(detail.dcode) : null} fusion={data.fusion?.perDistrict[detail.dcode] ?? null} />
   ) : null;
 
   return (
@@ -417,7 +439,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
       <NameDialog open={nameDialog != null} title={nameDialog?.welcome ? t('title') : nameDialog?.title ?? ''} onName={submitName} onClose={closeName} />
       <SignOutDialog open={signOutOpen} name={profile.name} onConfirm={() => { store.signOut(); setSignOutOpen(false); }} onCancel={() => setSignOutOpen(false)} />
       {undo && <UndoToast key={undo.removed.id} onUndo={doUndo} onExpire={() => setUndo(null)} />}
-      <AboutDialog open={aboutOpen} span={data.gunwSpan} years={histYears(site.areas)} onClose={() => setAboutOpen(false)} />
+      <AboutDialog noise={data.fusion?.noise ?? null} open={aboutOpen} span={data.gunwSpan} years={histYears(site.areas)} onClose={() => setAboutOpen(false)} />
       {phone && null}
     </>
   );

@@ -5,6 +5,7 @@ import { fmtDate } from '@/lib/data';
 import { sitingEnabled, type Area } from '@/lib/siting';
 import type { SavedSite } from '@/lib/user';
 import { NoData, Pending, useLang, useT } from './ui';
+import { FusionCard } from './FusionParts';
 import type { Key } from '@/lib/i18n';
 
 function Tile({ label, value, source, state, small }: { label: string; value: string | null; source: Key; state?: 'loading' | 'pending'; small?: boolean }) {
@@ -84,6 +85,7 @@ export default function OverviewPage({ data, areas, areasError, sites, greeting,
         </div>
         </div>
       </div>
+      {data.fusion && <FusionCard f={data.fusion} districtCount={data.districts.length} />}
       <div className="kpis">
         <Tile label={t('kpi.pairs')} value={manifestOk ? String(gunw.length) : null} source="src.manifest" />
         <Tile label={t('kpi.water')} value={manifestOk && water.length ? String(water.length) : null} state={manifestOk && !water.length ? 'pending' : undefined} source="src.manifest" />

@@ -1,0 +1,1784 @@
+{
+ "generated": "2026-11-15T07:51:44+00:00",
+ "method": {
+  "grid": "siting engine grid, EPSG:32647, 80 m, 684 x 857 cells, run_bangkok_0.3.0_989034ee",
+  "alignment": "each engine cell holds exactly 2 x 2 NISAR 40 m samples; block centre is offset +10 m east, +10 m north of the cell centre (asserted)",
+  "nisar_water": "HV below -19.0 dB with the noise-floor guard of process_to_web.gcov_water; an 80 m cell is valid when all 4 samples are valid and water when at least 2 are water",
+  "nisar_recurrence": "water scenes / valid scenes per cell, all scenes of both tracks",
+  "nisar_scenes": {
+   "A112": {
+    "count": 10,
+    "first": "2026-07-03",
+    "last": "2026-11-12"
+   },
+   "D4": {
+    "count": 9,
+    "first": "2026-07-08",
+    "last": "2026-10-24"
+   }
+  },
+  "s1_frequency": "water_freq_wet of the engine: Sentinel-1 VH below -18.0 dB, 132 wet-season scenes, 2017-02-07 to 2025-11-28",
+  "agreement_pixels": "not permanent water and at least 8 valid NISAR scenes",
+  "thresholds": {
+   "nisar_recurrence": 0.25,
+   "s1_frequency": 0.1,
+   "s1_high": 0.1,
+   "min_scenes": 8
+  },
+  "landcover": "ESA WorldCover 2021 on the engine grid, classes with at least 1 % of the grid; water_pct is over the cells valid in all scenes of both tracks (the same ground for every date), water_pct_scene_footprint over all valid cells of that scene",
+  "cropland": "cropland cells valid in all scenes of both tracks; minimum = the track's scene with the least cropland water",
+  "caveats": [
+   "Different years and bands: NISAR is one season (2026), Sentinel-1 is 2017 to 2025. Agreement shows where water recurs, not the same floods.",
+   "Dark HV is not only water: runways, smooth bare fields and wet smooth soil read as water in both radars.",
+   "Path 112 covers the western three quarters of the grid; east of it recurrence rests on the 9 path 4 scenes.",
+   "Cropland water on the full path 4 footprint is higher than on the two-track overlap (see water_pct_scene_footprint), because the eastern paddies are outside path 112.",
+   "Cropland reading dry in August can be rice canopy closing over standing water, not drainage.",
+   "The NISAR block is offset 10 m from the engine cell, an eighth of a cell."
+  ]
+ },
+ "agreement": {
+  "pixels": 485189,
+  "spearman": 0.72,
+  "nisar_ever_water_pct_where_s1_high": 94.0,
+  "nisar_ever_water_pct_where_s1_zero": 8.7,
+  "kappa": 0.542,
+  "kappa_thresholds": "NISAR recurrence >= 0.25, Sentinel-1 frequency >= 0.1",
+  "spearman_districts": 0.896,
+  "class_pct": {
+   "both": 6.9,
+   "nisar_only": 8.9,
+   "s1_only": 0.7,
+   "neither": 83.5
+  },
+  "reviewer": {
+   "pixels": 485000,
+   "spearman": 0.72,
+   "spearman_districts": 0.9,
+   "kappa": 0.57,
+   "cropland_water_pct": {
+    "July": 32,
+    "2026-08-13": 14,
+    "2026-10-24": 31
+   },
+   "cropland_dry_pct": 62,
+   "cropland_dry_km2": 30,
+   "cropland_back_pct": 70
+  }
+ },
+ "landcover_water": [
+  {
+   "date": "2026-07-03",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 2.0,
+   "water_pct_scene_footprint": 1.9
+  },
+  {
+   "date": "2026-07-03",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 8.8,
+   "water_pct_scene_footprint": 8.9
+  },
+  {
+   "date": "2026-07-03",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 32.0,
+   "water_pct_scene_footprint": 32.1
+  },
+  {
+   "date": "2026-07-03",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.8,
+   "water_pct_scene_footprint": 0.8
+  },
+  {
+   "date": "2026-07-03",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 17.4,
+   "water_pct_scene_footprint": 17.3
+  },
+  {
+   "date": "2026-07-03",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 83.3,
+   "water_pct_scene_footprint": 83.3
+  },
+  {
+   "date": "2026-07-08",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 2.4,
+   "water_pct_scene_footprint": 3.5
+  },
+  {
+   "date": "2026-07-08",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 12.7,
+   "water_pct_scene_footprint": 17.1
+  },
+  {
+   "date": "2026-07-08",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 32.3,
+   "water_pct_scene_footprint": 55.4
+  },
+  {
+   "date": "2026-07-08",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 1.1,
+   "water_pct_scene_footprint": 1.4
+  },
+  {
+   "date": "2026-07-08",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 20.7,
+   "water_pct_scene_footprint": 22.4
+  },
+  {
+   "date": "2026-07-08",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 86.2,
+   "water_pct_scene_footprint": 85.3
+  },
+  {
+   "date": "2026-07-15",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 2.2,
+   "water_pct_scene_footprint": 2.2
+  },
+  {
+   "date": "2026-07-15",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 9.8,
+   "water_pct_scene_footprint": 9.9
+  },
+  {
+   "date": "2026-07-15",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 29.9,
+   "water_pct_scene_footprint": 29.4
+  },
+  {
+   "date": "2026-07-15",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.9,
+   "water_pct_scene_footprint": 0.9
+  },
+  {
+   "date": "2026-07-15",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 18.5,
+   "water_pct_scene_footprint": 18.3
+  },
+  {
+   "date": "2026-07-15",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 84.4,
+   "water_pct_scene_footprint": 84.4
+  },
+  {
+   "date": "2026-07-20",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 2.5,
+   "water_pct_scene_footprint": 3.4
+  },
+  {
+   "date": "2026-07-20",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 12.8,
+   "water_pct_scene_footprint": 17.0
+  },
+  {
+   "date": "2026-07-20",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 31.4,
+   "water_pct_scene_footprint": 50.2
+  },
+  {
+   "date": "2026-07-20",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 1.2,
+   "water_pct_scene_footprint": 1.4
+  },
+  {
+   "date": "2026-07-20",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 21.3,
+   "water_pct_scene_footprint": 23.3
+  },
+  {
+   "date": "2026-07-20",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 85.9,
+   "water_pct_scene_footprint": 85.1
+  },
+  {
+   "date": "2026-08-13",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.5,
+   "water_pct_scene_footprint": 1.7
+  },
+  {
+   "date": "2026-08-13",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 5.4,
+   "water_pct_scene_footprint": 8.8
+  },
+  {
+   "date": "2026-08-13",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 13.7,
+   "water_pct_scene_footprint": 26.6
+  },
+  {
+   "date": "2026-08-13",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.3,
+   "water_pct_scene_footprint": 0.5
+  },
+  {
+   "date": "2026-08-13",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 12.5,
+   "water_pct_scene_footprint": 15.0
+  },
+  {
+   "date": "2026-08-13",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 80.2,
+   "water_pct_scene_footprint": 78.5
+  },
+  {
+   "date": "2026-08-20",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.3,
+   "water_pct_scene_footprint": 1.3
+  },
+  {
+   "date": "2026-08-20",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 4.8,
+   "water_pct_scene_footprint": 4.7
+  },
+  {
+   "date": "2026-08-20",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 8.7,
+   "water_pct_scene_footprint": 8.5
+  },
+  {
+   "date": "2026-08-20",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.5,
+   "water_pct_scene_footprint": 0.5
+  },
+  {
+   "date": "2026-08-20",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 13.4,
+   "water_pct_scene_footprint": 13.1
+  },
+  {
+   "date": "2026-08-20",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 79.7,
+   "water_pct_scene_footprint": 79.6
+  },
+  {
+   "date": "2026-08-25",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.8,
+   "water_pct_scene_footprint": 2.3
+  },
+  {
+   "date": "2026-08-25",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 8.8,
+   "water_pct_scene_footprint": 12.1
+  },
+  {
+   "date": "2026-08-25",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 18.9,
+   "water_pct_scene_footprint": 34.8
+  },
+  {
+   "date": "2026-08-25",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.9,
+   "water_pct_scene_footprint": 1.1
+  },
+  {
+   "date": "2026-08-25",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 18.0,
+   "water_pct_scene_footprint": 19.1
+  },
+  {
+   "date": "2026-08-25",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 84.3,
+   "water_pct_scene_footprint": 82.6
+  },
+  {
+   "date": "2026-09-01",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.6,
+   "water_pct_scene_footprint": 1.6
+  },
+  {
+   "date": "2026-09-01",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 6.6,
+   "water_pct_scene_footprint": 6.7
+  },
+  {
+   "date": "2026-09-01",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 15.8,
+   "water_pct_scene_footprint": 15.6
+  },
+  {
+   "date": "2026-09-01",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.7,
+   "water_pct_scene_footprint": 0.7
+  },
+  {
+   "date": "2026-09-01",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 15.3,
+   "water_pct_scene_footprint": 15.2
+  },
+  {
+   "date": "2026-09-01",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 82.1,
+   "water_pct_scene_footprint": 82.1
+  },
+  {
+   "date": "2026-09-06",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.7,
+   "water_pct_scene_footprint": 2.3
+  },
+  {
+   "date": "2026-09-06",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 8.4,
+   "water_pct_scene_footprint": 11.8
+  },
+  {
+   "date": "2026-09-06",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 15.4,
+   "water_pct_scene_footprint": 33.5
+  },
+  {
+   "date": "2026-09-06",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.9,
+   "water_pct_scene_footprint": 1.0
+  },
+  {
+   "date": "2026-09-06",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 17.8,
+   "water_pct_scene_footprint": 19.0
+  },
+  {
+   "date": "2026-09-06",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 84.2,
+   "water_pct_scene_footprint": 82.8
+  },
+  {
+   "date": "2026-09-13",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.4,
+   "water_pct_scene_footprint": 1.4
+  },
+  {
+   "date": "2026-09-13",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 4.7,
+   "water_pct_scene_footprint": 4.6
+  },
+  {
+   "date": "2026-09-13",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 7.5,
+   "water_pct_scene_footprint": 7.3
+  },
+  {
+   "date": "2026-09-13",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.5,
+   "water_pct_scene_footprint": 0.5
+  },
+  {
+   "date": "2026-09-13",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 12.9,
+   "water_pct_scene_footprint": 12.7
+  },
+  {
+   "date": "2026-09-13",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 80.4,
+   "water_pct_scene_footprint": 80.3
+  },
+  {
+   "date": "2026-09-18",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.5,
+   "water_pct_scene_footprint": 2.2
+  },
+  {
+   "date": "2026-09-18",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 6.4,
+   "water_pct_scene_footprint": 10.5
+  },
+  {
+   "date": "2026-09-18",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 19.6,
+   "water_pct_scene_footprint": 43.1
+  },
+  {
+   "date": "2026-09-18",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.7,
+   "water_pct_scene_footprint": 0.9
+  },
+  {
+   "date": "2026-09-18",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 15.5,
+   "water_pct_scene_footprint": 16.9
+  },
+  {
+   "date": "2026-09-18",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 81.4,
+   "water_pct_scene_footprint": 80.2
+  },
+  {
+   "date": "2026-09-25",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.3,
+   "water_pct_scene_footprint": 1.3
+  },
+  {
+   "date": "2026-09-25",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 6.8,
+   "water_pct_scene_footprint": 6.8
+  },
+  {
+   "date": "2026-09-25",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 26.9,
+   "water_pct_scene_footprint": 27.1
+  },
+  {
+   "date": "2026-09-25",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.5,
+   "water_pct_scene_footprint": 0.5
+  },
+  {
+   "date": "2026-09-25",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 11.1,
+   "water_pct_scene_footprint": 11.0
+  },
+  {
+   "date": "2026-09-25",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 77.2,
+   "water_pct_scene_footprint": 77.1
+  },
+  {
+   "date": "2026-09-30",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.8,
+   "water_pct_scene_footprint": 2.9
+  },
+  {
+   "date": "2026-09-30",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 8.9,
+   "water_pct_scene_footprint": 14.4
+  },
+  {
+   "date": "2026-09-30",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 32.1,
+   "water_pct_scene_footprint": 58.7
+  },
+  {
+   "date": "2026-09-30",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.8,
+   "water_pct_scene_footprint": 1.0
+  },
+  {
+   "date": "2026-09-30",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 16.9,
+   "water_pct_scene_footprint": 18.6
+  },
+  {
+   "date": "2026-09-30",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 83.3,
+   "water_pct_scene_footprint": 82.1
+  },
+  {
+   "date": "2026-10-07",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.3,
+   "water_pct_scene_footprint": 1.2
+  },
+  {
+   "date": "2026-10-07",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 4.7,
+   "water_pct_scene_footprint": 4.6
+  },
+  {
+   "date": "2026-10-07",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 14.8,
+   "water_pct_scene_footprint": 14.3
+  },
+  {
+   "date": "2026-10-07",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.5,
+   "water_pct_scene_footprint": 0.5
+  },
+  {
+   "date": "2026-10-07",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 12.8,
+   "water_pct_scene_footprint": 12.5
+  },
+  {
+   "date": "2026-10-07",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 79.0,
+   "water_pct_scene_footprint": 79.0
+  },
+  {
+   "date": "2026-10-12",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.8,
+   "water_pct_scene_footprint": 2.9
+  },
+  {
+   "date": "2026-10-12",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 8.4,
+   "water_pct_scene_footprint": 13.5
+  },
+  {
+   "date": "2026-10-12",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 29.0,
+   "water_pct_scene_footprint": 55.9
+  },
+  {
+   "date": "2026-10-12",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.9,
+   "water_pct_scene_footprint": 1.1
+  },
+  {
+   "date": "2026-10-12",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 17.3,
+   "water_pct_scene_footprint": 19.2
+  },
+  {
+   "date": "2026-10-12",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 82.9,
+   "water_pct_scene_footprint": 81.7
+  },
+  {
+   "date": "2026-10-19",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.7,
+   "water_pct_scene_footprint": 1.6
+  },
+  {
+   "date": "2026-10-19",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 7.0,
+   "water_pct_scene_footprint": 7.1
+  },
+  {
+   "date": "2026-10-19",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 30.2,
+   "water_pct_scene_footprint": 30.1
+  },
+  {
+   "date": "2026-10-19",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.7,
+   "water_pct_scene_footprint": 0.7
+  },
+  {
+   "date": "2026-10-19",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 15.2,
+   "water_pct_scene_footprint": 15.1
+  },
+  {
+   "date": "2026-10-19",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 81.4,
+   "water_pct_scene_footprint": 81.3
+  },
+  {
+   "date": "2026-10-24",
+   "track": "D4",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.8,
+   "water_pct_scene_footprint": 2.8
+  },
+  {
+   "date": "2026-10-24",
+   "track": "D4",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 9.1,
+   "water_pct_scene_footprint": 13.8
+  },
+  {
+   "date": "2026-10-24",
+   "track": "D4",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 30.6,
+   "water_pct_scene_footprint": 51.9
+  },
+  {
+   "date": "2026-10-24",
+   "track": "D4",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.9,
+   "water_pct_scene_footprint": 1.1
+  },
+  {
+   "date": "2026-10-24",
+   "track": "D4",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 18.0,
+   "water_pct_scene_footprint": 19.9
+  },
+  {
+   "date": "2026-10-24",
+   "track": "D4",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 83.7,
+   "water_pct_scene_footprint": 82.8
+  },
+  {
+   "date": "2026-10-31",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 1.4,
+   "water_pct_scene_footprint": 1.4
+  },
+  {
+   "date": "2026-10-31",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 6.4,
+   "water_pct_scene_footprint": 6.6
+  },
+  {
+   "date": "2026-10-31",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 29.2,
+   "water_pct_scene_footprint": 29.3
+  },
+  {
+   "date": "2026-10-31",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 0.7,
+   "water_pct_scene_footprint": 0.7
+  },
+  {
+   "date": "2026-10-31",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 14.4,
+   "water_pct_scene_footprint": 14.3
+  },
+  {
+   "date": "2026-10-31",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 80.4,
+   "water_pct_scene_footprint": 80.4
+  },
+  {
+   "date": "2026-11-12",
+   "track": "A112",
+   "class": 10,
+   "label": "Tree cover",
+   "water_pct": 2.4,
+   "water_pct_scene_footprint": 2.4
+  },
+  {
+   "date": "2026-11-12",
+   "track": "A112",
+   "class": 30,
+   "label": "Grassland",
+   "water_pct": 9.2,
+   "water_pct_scene_footprint": 9.2
+  },
+  {
+   "date": "2026-11-12",
+   "track": "A112",
+   "class": 40,
+   "label": "Cropland",
+   "water_pct": 31.6,
+   "water_pct_scene_footprint": 31.7
+  },
+  {
+   "date": "2026-11-12",
+   "track": "A112",
+   "class": 50,
+   "label": "Built-up",
+   "water_pct": 1.0,
+   "water_pct_scene_footprint": 1.0
+  },
+  {
+   "date": "2026-11-12",
+   "track": "A112",
+   "class": 60,
+   "label": "Bare / sparse vegetation",
+   "water_pct": 17.4,
+   "water_pct_scene_footprint": 17.2
+  },
+  {
+   "date": "2026-11-12",
+   "track": "A112",
+   "class": 80,
+   "label": "Permanent water bodies",
+   "water_pct": 82.7,
+   "water_pct_scene_footprint": 82.7
+  }
+ ],
+ "cropland_cycle": {
+  "A112": {
+   "first_date": "2026-07-03",
+   "min_date": "2026-09-13",
+   "last_date": "2026-11-12",
+   "cropland_km2": 150.0,
+   "water_pct": {
+    "2026-07-03": 32.0,
+    "2026-09-13": 7.5,
+    "2026-11-12": 31.6
+   },
+   "water_first_km2": 48.0,
+   "dry_at_min_km2": 38.4,
+   "dry_at_min_pct": 80.0,
+   "water_again_last_km2": 27.9,
+   "water_again_last_pct": 72.5
+  },
+  "D4": {
+   "first_date": "2026-07-08",
+   "min_date": "2026-08-13",
+   "last_date": "2026-10-24",
+   "cropland_km2": 150.0,
+   "water_pct": {
+    "2026-07-08": 32.3,
+    "2026-08-13": 13.7,
+    "2026-10-24": 30.6
+   },
+   "water_first_km2": 48.4,
+   "dry_at_min_km2": 29.9,
+   "dry_at_min_pct": 61.8,
+   "water_again_last_km2": 20.8,
+   "water_again_last_pct": 69.5
+  }
+ },
+ "districts": [
+  {
+   "dcode": "1001",
+   "pixels": 819,
+   "nisar_recurrence_mean": 0.0172,
+   "s1_frequency_mean": 0.0036,
+   "class_pct": {
+    "both": 0.72,
+    "nisar_only": 2.04,
+    "s1_only": 0.24,
+    "neither": 95.2,
+    "perm_water": 1.8,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1002",
+   "pixels": 1738,
+   "nisar_recurrence_mean": 0.0048,
+   "s1_frequency_mean": 0.002,
+   "class_pct": {
+    "both": 0.28,
+    "nisar_only": 0.51,
+    "s1_only": 0.23,
+    "neither": 96.85,
+    "perm_water": 2.14,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1003",
+   "pixels": 28412,
+   "nisar_recurrence_mean": 0.2538,
+   "s1_frequency_mean": 0.0472,
+   "class_pct": {
+    "both": 11.38,
+    "nisar_only": 14.69,
+    "s1_only": 0.43,
+    "neither": 49.16,
+    "perm_water": 0.64,
+    "no_data": 23.7
+   }
+  },
+  {
+   "dcode": "1004",
+   "pixels": 624,
+   "nisar_recurrence_mean": 0.0011,
+   "s1_frequency_mean": 0.0004,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.16,
+    "neither": 99.84,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1005",
+   "pixels": 6384,
+   "nisar_recurrence_mean": 0.0078,
+   "s1_frequency_mean": 0.0022,
+   "class_pct": {
+    "both": 0.38,
+    "nisar_only": 0.89,
+    "s1_only": 0.28,
+    "neither": 98.3,
+    "perm_water": 0.16,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1006",
+   "pixels": 4295,
+   "nisar_recurrence_mean": 0.0016,
+   "s1_frequency_mean": 0.0002,
+   "class_pct": {
+    "both": 0.05,
+    "nisar_only": 0.19,
+    "s1_only": 0.02,
+    "neither": 99.67,
+    "perm_water": 0.07,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1007",
+   "pixels": 1263,
+   "nisar_recurrence_mean": 0.0005,
+   "s1_frequency_mean": 0.0004,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.16,
+    "neither": 99.68,
+    "perm_water": 0.16,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1008",
+   "pixels": 399,
+   "nisar_recurrence_mean": 0.0,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.0,
+    "neither": 100.0,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1009",
+   "pixels": 2120,
+   "nisar_recurrence_mean": 0.0031,
+   "s1_frequency_mean": 0.0007,
+   "class_pct": {
+    "both": 0.23,
+    "nisar_only": 0.42,
+    "s1_only": 0.0,
+    "neither": 98.78,
+    "perm_water": 0.56,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1010",
+   "pixels": 9476,
+   "nisar_recurrence_mean": 0.079,
+   "s1_frequency_mean": 0.0134,
+   "class_pct": {
+    "both": 3.64,
+    "nisar_only": 7.64,
+    "s1_only": 0.22,
+    "neither": 87.86,
+    "perm_water": 0.64,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1011",
+   "pixels": 19919,
+   "nisar_recurrence_mean": 0.1546,
+   "s1_frequency_mean": 0.0351,
+   "class_pct": {
+    "both": 10.19,
+    "nisar_only": 11.06,
+    "s1_only": 0.71,
+    "neither": 77.17,
+    "perm_water": 0.86,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1012",
+   "pixels": 1848,
+   "nisar_recurrence_mean": 0.011,
+   "s1_frequency_mean": 0.0068,
+   "class_pct": {
+    "both": 1.13,
+    "nisar_only": 0.82,
+    "s1_only": 0.51,
+    "neither": 92.45,
+    "perm_water": 5.08,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1013",
+   "pixels": 214,
+   "nisar_recurrence_mean": 0.0148,
+   "s1_frequency_mean": 0.0029,
+   "class_pct": {
+    "both": 0.92,
+    "nisar_only": 1.38,
+    "s1_only": 0.0,
+    "neither": 95.87,
+    "perm_water": 1.83,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1014",
+   "pixels": 1438,
+   "nisar_recurrence_mean": 0.0,
+   "s1_frequency_mean": 0.0001,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.07,
+    "neither": 99.93,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1015",
+   "pixels": 1290,
+   "nisar_recurrence_mean": 0.0095,
+   "s1_frequency_mean": 0.0031,
+   "class_pct": {
+    "both": 0.91,
+    "nisar_only": 0.53,
+    "s1_only": 0.08,
+    "neither": 95.92,
+    "perm_water": 2.57,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1016",
+   "pixels": 980,
+   "nisar_recurrence_mean": 0.0048,
+   "s1_frequency_mean": 0.0019,
+   "class_pct": {
+    "both": 0.41,
+    "nisar_only": 0.3,
+    "s1_only": 0.0,
+    "neither": 98.68,
+    "perm_water": 0.61,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1017",
+   "pixels": 2533,
+   "nisar_recurrence_mean": 0.0019,
+   "s1_frequency_mean": 0.0002,
+   "class_pct": {
+    "both": 0.04,
+    "nisar_only": 0.28,
+    "s1_only": 0.0,
+    "neither": 99.64,
+    "perm_water": 0.04,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1018",
+   "pixels": 903,
+   "nisar_recurrence_mean": 0.0162,
+   "s1_frequency_mean": 0.005,
+   "class_pct": {
+    "both": 1.08,
+    "nisar_only": 1.94,
+    "s1_only": 0.43,
+    "neither": 93.86,
+    "perm_water": 2.69,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1019",
+   "pixels": 5575,
+   "nisar_recurrence_mean": 0.0012,
+   "s1_frequency_mean": 0.0001,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.14,
+    "s1_only": 0.02,
+    "neither": 99.84,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1020",
+   "pixels": 1905,
+   "nisar_recurrence_mean": 0.0054,
+   "s1_frequency_mean": 0.0012,
+   "class_pct": {
+    "both": 0.42,
+    "nisar_only": 0.42,
+    "s1_only": 0.1,
+    "neither": 97.98,
+    "perm_water": 1.09,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1021",
+   "pixels": 14134,
+   "nisar_recurrence_mean": 0.156,
+   "s1_frequency_mean": 0.0232,
+   "class_pct": {
+    "both": 4.76,
+    "nisar_only": 8.98,
+    "s1_only": 0.57,
+    "neither": 59.75,
+    "perm_water": 25.94,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1022",
+   "pixels": 2994,
+   "nisar_recurrence_mean": 0.0005,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.1,
+    "s1_only": 0.0,
+    "neither": 99.9,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1023",
+   "pixels": 5660,
+   "nisar_recurrence_mean": 0.0081,
+   "s1_frequency_mean": 0.0004,
+   "class_pct": {
+    "both": 0.14,
+    "nisar_only": 1.04,
+    "s1_only": 0.0,
+    "neither": 98.82,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1024",
+   "pixels": 1863,
+   "nisar_recurrence_mean": 0.0131,
+   "s1_frequency_mean": 0.007,
+   "class_pct": {
+    "both": 1.09,
+    "nisar_only": 0.93,
+    "s1_only": 0.41,
+    "neither": 94.19,
+    "perm_water": 3.37,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1025",
+   "pixels": 1764,
+   "nisar_recurrence_mean": 0.005,
+   "s1_frequency_mean": 0.0023,
+   "class_pct": {
+    "both": 0.27,
+    "nisar_only": 0.38,
+    "s1_only": 0.38,
+    "neither": 94.22,
+    "perm_water": 4.75,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1026",
+   "pixels": 1331,
+   "nisar_recurrence_mean": 0.0001,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.0,
+    "neither": 100.0,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1027",
+   "pixels": 3667,
+   "nisar_recurrence_mean": 0.001,
+   "s1_frequency_mean": 0.0001,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.16,
+    "s1_only": 0.03,
+    "neither": 99.81,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1028",
+   "pixels": 1135,
+   "nisar_recurrence_mean": 0.0025,
+   "s1_frequency_mean": 0.0009,
+   "class_pct": {
+    "both": 0.26,
+    "nisar_only": 0.26,
+    "s1_only": 0.0,
+    "neither": 99.21,
+    "perm_water": 0.26,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1029",
+   "pixels": 1991,
+   "nisar_recurrence_mean": 0.0009,
+   "s1_frequency_mean": 0.0009,
+   "class_pct": {
+    "both": 0.05,
+    "nisar_only": 0.0,
+    "s1_only": 0.25,
+    "neither": 98.61,
+    "perm_water": 1.09,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1030",
+   "pixels": 5107,
+   "nisar_recurrence_mean": 0.0003,
+   "s1_frequency_mean": 0.0003,
+   "class_pct": {
+    "both": 0.02,
+    "nisar_only": 0.02,
+    "s1_only": 0.06,
+    "neither": 99.86,
+    "perm_water": 0.04,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1031",
+   "pixels": 1212,
+   "nisar_recurrence_mean": 0.0176,
+   "s1_frequency_mean": 0.0039,
+   "class_pct": {
+    "both": 1.23,
+    "nisar_only": 1.39,
+    "s1_only": 0.15,
+    "neither": 90.67,
+    "perm_water": 6.55,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1032",
+   "pixels": 8296,
+   "nisar_recurrence_mean": 0.0068,
+   "s1_frequency_mean": 0.0015,
+   "class_pct": {
+    "both": 0.29,
+    "nisar_only": 0.57,
+    "s1_only": 0.15,
+    "neither": 97.84,
+    "perm_water": 1.14,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1033",
+   "pixels": 2013,
+   "nisar_recurrence_mean": 0.0079,
+   "s1_frequency_mean": 0.0046,
+   "class_pct": {
+    "both": 1.07,
+    "nisar_only": 0.39,
+    "s1_only": 0.15,
+    "neither": 96.16,
+    "perm_water": 2.23,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1034",
+   "pixels": 3768,
+   "nisar_recurrence_mean": 0.0001,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.0,
+    "neither": 100.0,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1035",
+   "pixels": 3620,
+   "nisar_recurrence_mean": 0.0012,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.19,
+    "s1_only": 0.0,
+    "neither": 99.81,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1036",
+   "pixels": 5257,
+   "nisar_recurrence_mean": 0.0209,
+   "s1_frequency_mean": 0.0023,
+   "class_pct": {
+    "both": 0.65,
+    "nisar_only": 2.63,
+    "s1_only": 0.14,
+    "neither": 88.25,
+    "perm_water": 8.33,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1037",
+   "pixels": 1111,
+   "nisar_recurrence_mean": 0.0,
+   "s1_frequency_mean": 0.0001,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.0,
+    "neither": 100.0,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1038",
+   "pixels": 3314,
+   "nisar_recurrence_mean": 0.004,
+   "s1_frequency_mean": 0.0004,
+   "class_pct": {
+    "both": 0.09,
+    "nisar_only": 0.6,
+    "s1_only": 0.0,
+    "neither": 99.04,
+    "perm_water": 0.27,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1039",
+   "pixels": 2038,
+   "nisar_recurrence_mean": 0.0,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.0,
+    "neither": 100.0,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1040",
+   "pixels": 7477,
+   "nisar_recurrence_mean": 0.0039,
+   "s1_frequency_mean": 0.0001,
+   "class_pct": {
+    "both": 0.07,
+    "nisar_only": 0.47,
+    "s1_only": 0.0,
+    "neither": 99.47,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1041",
+   "pixels": 3520,
+   "nisar_recurrence_mean": 0.0035,
+   "s1_frequency_mean": 0.0009,
+   "class_pct": {
+    "both": 0.14,
+    "nisar_only": 0.37,
+    "s1_only": 0.23,
+    "neither": 98.42,
+    "perm_water": 0.85,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1042",
+   "pixels": 6818,
+   "nisar_recurrence_mean": 0.0083,
+   "s1_frequency_mean": 0.001,
+   "class_pct": {
+    "both": 0.28,
+    "nisar_only": 1.2,
+    "s1_only": 0.09,
+    "neither": 98.27,
+    "perm_water": 0.16,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1043",
+   "pixels": 3921,
+   "nisar_recurrence_mean": 0.0108,
+   "s1_frequency_mean": 0.0023,
+   "class_pct": {
+    "both": 0.4,
+    "nisar_only": 1.24,
+    "s1_only": 0.4,
+    "neither": 96.87,
+    "perm_water": 1.08,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1044",
+   "pixels": 4370,
+   "nisar_recurrence_mean": 0.0071,
+   "s1_frequency_mean": 0.0014,
+   "class_pct": {
+    "both": 0.23,
+    "nisar_only": 0.73,
+    "s1_only": 0.21,
+    "neither": 98.41,
+    "perm_water": 0.43,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1045",
+   "pixels": 2685,
+   "nisar_recurrence_mean": 0.0001,
+   "s1_frequency_mean": 0.0,
+   "class_pct": {
+    "both": 0.0,
+    "nisar_only": 0.0,
+    "s1_only": 0.0,
+    "neither": 100.0,
+    "perm_water": 0.0,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1046",
+   "pixels": 17871,
+   "nisar_recurrence_mean": 0.1192,
+   "s1_frequency_mean": 0.0162,
+   "class_pct": {
+    "both": 5.59,
+    "nisar_only": 12.11,
+    "s1_only": 0.51,
+    "neither": 76.86,
+    "perm_water": 1.27,
+    "no_data": 3.66
+   }
+  },
+  {
+   "dcode": "1047",
+   "pixels": 2926,
+   "nisar_recurrence_mean": 0.0048,
+   "s1_frequency_mean": 0.0009,
+   "class_pct": {
+    "both": 0.17,
+    "nisar_only": 0.74,
+    "s1_only": 0.1,
+    "neither": 97.54,
+    "perm_water": 1.45,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1048",
+   "pixels": 8081,
+   "nisar_recurrence_mean": 0.0151,
+   "s1_frequency_mean": 0.0011,
+   "class_pct": {
+    "both": 0.37,
+    "nisar_only": 1.69,
+    "s1_only": 0.07,
+    "neither": 97.77,
+    "perm_water": 0.09,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1049",
+   "pixels": 5107,
+   "nisar_recurrence_mean": 0.0389,
+   "s1_frequency_mean": 0.0021,
+   "class_pct": {
+    "both": 0.56,
+    "nisar_only": 4.65,
+    "s1_only": 0.08,
+    "neither": 94.07,
+    "perm_water": 0.64,
+    "no_data": 0.0
+   }
+  },
+  {
+   "dcode": "1050",
+   "pixels": 5611,
+   "nisar_recurrence_mean": 0.0093,
+   "s1_frequency_mean": 0.0004,
+   "class_pct": {
+    "both": 0.07,
+    "nisar_only": 1.12,
+    "s1_only": 0.02,
+    "neither": 98.74,
+    "perm_water": 0.05,
+    "no_data": 0.0
+   }
+  }
+ ],
+ "overlay": {
+  "image": "overlays/fusion_agreement.png",
+  "shape": [
+   684,
+   857
+  ],
+  "bounds": [
+   [
+    100.31986230603972,
+    13.974294665072808
+   ],
+   [
+    100.95439142263288,
+    13.970018364629018
+   ],
+   [
+    100.95030109995375,
+    13.475518061880823
+   ],
+   [
+    100.31709881956056,
+    13.479637373521948
+   ]
+  ],
+  "legend": [
+   {
+    "class": "both",
+    "colour": "#00c2a8",
+    "definition": "NISAR recurrence >= 0.25 and Sentinel-1 frequency >= 0.1"
+   },
+   {
+    "class": "nisar_only",
+    "colour": "#ffd23f",
+    "definition": "NISAR recurrence >= 0.25, Sentinel-1 frequency < 0.1"
+   },
+   {
+    "class": "s1_only",
+    "colour": "#e83f9b",
+    "definition": "Sentinel-1 frequency >= 0.1, NISAR recurrence < 0.25"
+   },
+   {
+    "class": "perm_water",
+    "colour": "#5b7fb5",
+    "definition": "permanent water in the Sentinel-1 engine (water in at least half of all scenes)"
+   },
+   {
+    "class": "neither",
+    "colour": null,
+    "definition": "neither radar sees water, or too few NISAR scenes (transparent)"
+   }
+  ]
+ },
+ "los_noise": {
+  "odd_even_corr": {
+   "A112": -0.819,
+   "D4": -0.91
+  },
+  "pairs": {
+   "A112": 9,
+   "D4": 8
+  },
+  "track_sum_corr": 0.469,
+  "sign_disagree_districts": 14,
+  "districts_with_both_tracks": 49,
+  "note": "Per district, the odd and even pair sums of one track do not agree and the two tracks often disagree in sign, so the LOS means are mostly atmosphere and are left out of the district index."
+ }
+}

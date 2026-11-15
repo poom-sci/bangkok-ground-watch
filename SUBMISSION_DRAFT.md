@@ -7,7 +7,7 @@ App: https://bangkok-ground-watch.vercel.app/app/
 Ground Pulse: https://bangkok-ground-watch.vercel.app/app/?tab=ground
 Site Scout: https://bangkok-ground-watch.vercel.app/app/?tab=site
 One district (Lat Krabang): https://bangkok-ground-watch.vercel.app/app/?mode=ground&d=1011
-Slide deck (PDF, 1.8 MB): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
+Slide deck (PDF, 7 pages): https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf
 
 ---
 
@@ -27,7 +27,7 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 
 - App: https://bangkok-ground-watch.vercel.app (project page) and https://bangkok-ground-watch.vercel.app/app/ (the app)
 - Code (web app + NISAR pipeline): https://github.com/poom-sci/bangkok-ground-watch
-- Code (site suitability engine): TODO public link for solsat-siting (currently private, its owner must make it public)
+- Code (site suitability engine, by a teammate): https://github.com/Thanut-Junnim26/solsat-siting (must be public before submitting; if it is not, delete this line and say in the description that the engine's code is not yet public)
 
 ## Detailed project description
 
@@ -36,7 +36,7 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 **Ground Pulse (NISAR).**
 - Line-of-sight (LOS) change: 17 NISAR L2 GUNW interferograms over Bangkok, 9 on ascending track 112 and 8 on descending track 4, from 21 June to 31 October 2026. Each image is the change between two radar passes 12 to 36 days apart, shown in millimetres on a diverging scale, with a date scrubber and play button.
 - Surface water: 19 NISAR L2 GCOV scenes (HV backscatter), July to November 2026. Pixels below -19 dB are drawn as surface water and waterlogged land.
-- District screening: for each of Bangkok's 50 districts the app shows cumulative LOS change, the largest water share seen, population density and OpenStreetMap building density, and ranks districts by a simple screening index (the average percentile rank of water share, absolute LOS change and population density).
+- District screening: for each of Bangkok's 50 districts the app shows cumulative LOS change, the largest water share seen, population density and OpenStreetMap building density, and ranks districts by a simple screening index (the average percentile rank of water share and population density; ground change is shown but not ranked).
 
 **Site Scout (Sentinel-1, a second radar frequency).**
 - Tap a point inside a covered area (all of Bangkok, Ayutthaya or Samut Sakhon) and get a 0 to 100 suitability screening score for siting a factory with rooftop solar.
@@ -46,11 +46,19 @@ https://bangkok-ground-watch.vercel.app/slides/bangkok-ground-watch.pdf (7 slide
 - Each district has its own detail view (index and rank, LOS per radar pair with its spread, usable radar signal, water per scene, people and buildings) and a "Scout here" button that jumps into Site Scout.
 - A display name (no password, kept in the browser only) lets a visitor save checked sites to "Shortlist". Guests can use everything else.
 
+### What we found
+
+**What the two radars agree on.** Across 485,189 non-permanent-water pixels of Bangkok, NISAR L-band HV water recurrence (19 scenes, July to November 2026) ranks land the same way as Sentinel-1 C-band flood frequency (150 scenes, 2017 to 2025): Spearman 0.72 per pixel and 0.90 across the 50 districts. NISAR saw water at least once on 94 percent of the land Sentinel-1 saw wet in 10 percent or more of wet-season passes, against 8.7 percent of land it never saw wet. Both methods threshold dark backscatter, so they share blind spots, and one NISAR season is not a flood record.
+
+**What drives the change.** In the area both NISAR tracks cover (150 km2 of cropland), cropland water fell from 32 percent on 8 July to 14 percent on 13 August and returned to 31 percent on 24 October, while built-up land stayed under 2 percent. About 62 percent (30 km2) of the cropland that was water in July read dry in August, and 70 percent of that returned by October. The surface water change inside Bangkok follows the rice season, not flooding of the city. A dry reading on cropland can mean crop canopy raising the HV backscatter, not drainage.
+
+**Why ground change is shown but not ranked.** Per-pair LOS means are dominated by atmosphere: sums of alternating pairs cancel (correlation -0.82 on track 112 and -0.91 on track 4) and the two tracks disagree in sign in 14 of 49 districts. NISAR's ionosphere and troposphere correction layers are not applied. Roughly 10 to 12 months of NISAR acquisitions would be needed before a rate of a few millimetres per year could be separated from this noise.
+
 ### How it works
 
 1. **NISAR without the download.** GUNW files are about 2.3 GB and GCOV files about 6 GB each. Our fetch script searches ASF with `asf_search`, then opens each HDF5 file remotely with `earthaccess` and `h5py` and reads only the Bangkok window (about 906 x 1019 pixels at 80 m for GUNW) through HTTP range requests. One granule first took almost 9 minutes; after going straight to the dataset paths, tuning the remote block size and reading granules in parallel the whole set fits in a short run.
 2. **LOS change.** Unwrapped phase is converted to millimetres with the L-band wavelength (0.2384 m). We keep pixels with coherence of at least 0.4 in the largest connected component, and remove a plane from each image.
-3. **Water.** GCOV HV power is converted to dB. The histogram over Bangkok has two modes (open water near -24 dB, land near -12 dB) with the valley at -19 dB in every scene, so we use a fixed -19 dB threshold. Otsu's method picked about -16.6 dB and marked paddies and orchards as water, so we dropped it.
+3. **Water.** GCOV HV power is converted to dB. The histogram over Bangkok has two modes (open water near -24 dB, land near -12 dB) with the valley near -19 dB in the 8 scenes we checked (both tracks, September to November), so we use a fixed -19 dB threshold. Otsu's method picked about -16.6 dB and marked paddies and orchards as water, so we dropped it.
 4. **District statistics.** Pixels are aggregated inside each district outline; building counts come from OpenStreetMap through the Overpass API.
 5. **Site suitability engine.** A FastAPI service reads pre-built grids at 80 m from Sentinel-1 RTC (2017 to 2025), Copernicus DEM GLO-30 and ESA WorldCover 2021. The water rule (VH below -18 dB) was calibrated against Sentinel-2 water on known flood dates. It runs on Google Cloud Run.
 6. **Front end.** Next.js static export with MapLibre GL, deployed on Vercel. English and Thai.
@@ -87,6 +95,8 @@ Python (asf_search, earthaccess, h5py, numpy, pyproj, matplotlib, FastAPI, scipy
 
 ## Space agency partner data
 
+- ISRO: NISAR is a joint NASA and ISRO mission
+
 - Copernicus Sentinel-1 RTC, 2017 to 2025 (ESA; contains modified Copernicus Sentinel data), through Microsoft Planetary Computer
 - Copernicus Sentinel-2 L2A (ESA), used to calibrate the water rule
 - Copernicus DEM GLO-30 (ESA)
@@ -99,17 +109,17 @@ Python (asf_search, earthaccess, h5py, numpy, pyproj, matplotlib, FastAPI, scipy
 - MapLibre GL JS (BSD-3-Clause): https://maplibre.org
 - Next.js (MIT), React (MIT)
 - asf_search, earthaccess, h5py, numpy, pyproj, matplotlib, FastAPI, scipy, pillow, uvicorn (open-source Python libraries)
-- IBM Plex Sans Thai and IBM Plex Mono (SIL Open Font License)
+- Poppins, Prompt, Chakra Petch, Zen Dots and Kanit (SIL Open Font License, via Google Fonts)
 - NISAR NASA SDS Algorithm Theoretical Basis Document, JPL D-95677 Rev A, and the L2 GUNW Product Specification, JPL D-102272 Rev E
 - ISCE3 (NISAR science data system software): https://github.com/isce-framework/isce3
 - MintPy: https://github.com/insarlab/MintPy
 - Overpass API: https://overpass-api.de
-- TODO: confirm this list against the team's research notes before pasting
+- TypeScript, Microsoft Planetary Computer STAC (Sentinel-1 RTC access), Sentinel-2 cloudless by EOX IT Services GmbH (base map imagery, CC BY 4.0, contains modified Copernicus Sentinel data 2016)
 
 ## Use of artificial intelligence
 
-We used Claude (Anthropic), through Claude Code, as a coding and writing assistant. It wrote most of the code for the NISAR fetch and processing scripts and for the web app, produced the interface design specification, reviewed the code, and drafted this project text. Team members chose the challenge, the data and the method, ran and checked the results against real NISAR and Sentinel-1 data, and made the decisions about what the app claims. No AI-generated images, video or audio are used. The source files state that they contain AI-assisted code.
-TODO: add the same kind of statement for the solsat-siting engine (ask its author which tools were used), and add an AI-assistance note to the repository README files.
+We used Claude (Anthropic), through Claude Code, as a coding and writing assistant. It wrote most of the code for the NISAR fetch and processing scripts and for the web app, produced the interface design specification, reviewed the code, and drafted this project text. Team members chose the challenge, the data and the method, ran and checked the results against real NISAR and Sentinel-1 data, and made the decisions about what the app claims. No AI-generated images, video or audio are used. The repository README states which parts were written with AI assistance.
+The site suitability engine was written by a teammate in a separate repository; its AI use is described in that repository.
 
 ---
 

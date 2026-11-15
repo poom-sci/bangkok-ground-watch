@@ -201,7 +201,7 @@ function Body({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
         <section className="land-sec narrow" aria-labelledby="lim">
           <h2 id="lim">{t('lim.t')}</h2>
           <ul className="about-list">
-            <li>{t('lim.1')}</li>
+            {data?.fusion?.noise ? <><li>{t('about.noise', { n: data.fusion.noise.disagree, m: data.fusion.noise.both })}</li><li>{t('about.iono')}</li></> : <li>{t('lim.1')}</li>}
             {monthRange && <li>{t('lim.2', { range: monthRange })}</li>}
             <li>{t('lim.3')}</li>
             <li>{t('lim.4')}</li>

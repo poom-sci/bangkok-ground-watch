@@ -59,11 +59,21 @@ python district_stats.py --in nisar_out --out app/data              # districts.
 cd web && npm run sync-data                                         # copy app/data into web/public/data
 ```
 
+## What we found
+
+**What the two radars agree on.** Across 485,189 non-permanent-water pixels of Bangkok, NISAR L-band HV water recurrence (19 scenes, July to November 2026) ranks land the same way as Sentinel-1 C-band flood frequency (150 scenes, 2017 to 2025): Spearman 0.72 per pixel and 0.90 across the 50 districts. NISAR saw water at least once on 94 percent of the land Sentinel-1 saw wet in 10 percent or more of wet-season passes, against 8.7 percent of land it never saw wet. Both methods threshold dark backscatter, so they share blind spots, and one NISAR season is not a flood record.
+
+**What drives the change.** In the area both NISAR tracks cover (150 km2 of cropland), cropland water fell from 32 percent on 8 July to 14 percent on 13 August and returned to 31 percent on 24 October, while built-up land stayed under 2 percent. About 62 percent (30 km2) of the cropland that was water in July read dry in August, and 70 percent of that returned by October. The surface water change inside Bangkok follows the rice season, not flooding of the city. A dry reading on cropland can mean crop canopy raising the HV backscatter, not drainage.
+
+**Why ground change is shown but not ranked.** Per-pair LOS means are dominated by atmosphere: sums of alternating pairs cancel (correlation -0.82 on track 112 and -0.91 on track 4) and the two tracks disagree in sign in 14 of 49 districts. NISAR's ionosphere and troposphere correction layers are not applied. Roughly 10 to 12 months of NISAR acquisitions would be needed before a rate of a few millimetres per year could be separated from this noise.
+
+Reproduce with `python fusion_analysis.py` (needs the Sentinel-1 engine's Bangkok grid) and `python fusion_analysis.py --check`.
+
 ## Method in short
 
 1. LOS change: unwrapped phase to millimetres with the L-band wavelength (0.2384 m); pixels kept when coherence is at least 0.4 and they belong to the largest connected component; a plane is removed from each image.
-2. Water: GCOV HV power in dB; pixels below a fixed -19 dB are drawn as surface water and waterlogged land. The histogram over Bangkok has its valley at -19 dB in every scene; Otsu's method chose about -16.6 dB and marked paddies and orchards as water, so it is not used.
-3. District screening index: the average percentile rank of water share, absolute LOS change and population density, using the indicators that have data.
+2. Water: GCOV HV power in dB; pixels below a fixed -19 dB are drawn as surface water and waterlogged land. The histogram over Bangkok has its valley near -19 dB in the 8 scenes we checked; Otsu's method chose about -16.6 dB and marked paddies and orchards as water, so it is not used.
+3. District screening index: the average percentile rank of water share and population density. Ground change is shown but not ranked (see the limits).
 4. Site Scout (separate engine): share of wet-season Sentinel-1 passes in which the 80 m pixel was water (VH below -18 dB), combined with a flood likelihood learned from elevation.
 
 ## What it does not claim
@@ -81,9 +91,9 @@ cd web && npm run sync-data                                         # copy app/d
 - NISAR L2 GUNW and GCOV, NASA/ISRO, through the Alaska Satellite Facility DAAC (NASA Earthdata).
 - NASA POWER solar irradiance (shown in the Site Scout, not part of the score).
 - Copernicus Sentinel-1 and Sentinel-2 (contains modified Copernicus Sentinel data), Copernicus DEM GLO-30, ESA WorldCover 2021 (CC BY 4.0), used by the site suitability engine.
-- OpenStreetMap contributors (base map tiles and building counts), ODbL.
+- OpenStreetMap contributors (map base and building counts), ODbL. Satellite base: Sentinel-2 cloudless by EOX IT Services GmbH (CC BY 4.0, contains modified Copernicus Sentinel data 2016).
 - Bangkok district outlines and population: `Bangkok-districts.geojson` from https://github.com/pcrete/gsvloader-demo (MIT). The file does not state the origin or year of its population figures.
-- MapLibre GL JS, Next.js, React, IBM Plex Sans Thai and IBM Plex Mono (SIL Open Font License).
+- MapLibre GL JS, Next.js, React, Poppins, Prompt, Chakra Petch, Zen Dots and Kanit (SIL Open Font License, via Google Fonts).
 
 Not affiliated with or endorsed by NASA.
 

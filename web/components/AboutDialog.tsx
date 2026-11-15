@@ -7,9 +7,9 @@ import { sitingEnabled } from '@/lib/siting';
 import type { Key } from '@/lib/i18n';
 
 const bullets: Key[] = ['about.1', 'about.9', 'about.2', 'about.7', 'about.10', 'about.3', 'about.4', 'about.5', 'about.6', 'about.8'];
-const sources: Key[] = ['src.1', 'src.2', 'src.3', 'src.4', 'src.5'];
+const sources: Key[] = ['src.sat', 'src.1', 'src.2', 'src.3', 'src.4', 'src.5'];
 
-export default function AboutDialog({ open, span, years, onClose }: { open: boolean; span: { from: string; to: string } | null; years: { from: number; to: number } | null; onClose: () => void }) {
+export default function AboutDialog({ open, span, years, onClose, noise }: { open: boolean; noise: { disagree: number; both: number } | null; span: { from: string; to: string } | null; years: { from: number; to: number } | null; onClose: () => void }) {
   const t = useT();
   const lang = useLang();
   const range = span ? fmtRange(span.from, span.to, lang, t('interval.to')) : null;
@@ -35,7 +35,7 @@ export default function AboutDialog({ open, span, years, onClose }: { open: bool
           </>
         )}
         {sitingEnabled && <h3>{t('about.ground')}</h3>}
-        <ul className="about-list">{bullets.map((k) => <li key={k}>{k === 'about.4' ? (range ? t('about.4', { range }) : t('about.4b')) : t(k)}</li>)}</ul>
+        <ul className="about-list">{bullets.flatMap((k) => (k === 'about.1' && noise ? ['about.noise' as Key, 'about.iono' as Key] : [k])).map((k) => <li key={k}>{k === 'about.noise' ? t('about.noise', { n: noise?.disagree ?? '', m: noise?.both ?? '' }) : k === 'about.4' ? (range ? t('about.4', { range }) : t('about.4b')) : t(k)}</li>)}</ul>
         <h3>{t('about.sources')}</h3>
         <ul className="about-list">{sources.map((k) => <li key={k}>{t(k)}</li>)}</ul>
       </div>

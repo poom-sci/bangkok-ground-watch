@@ -125,9 +125,9 @@ function Disclosure({ title, extra, children }: { title: string; extra?: React.R
   );
 }
 
-export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack, waterAvailable, secDateOf, trackSpan, onBack, onCheck, backOnly, backGround }: {
+export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack, waterAvailable, secDateOf, trackSpan, onBack, onCheck, backOnly, backGround, fusion }: {
   d: District; rank: number; rankOf: number; tracks: string[]; track: string; onTrack: (t: string) => void; waterAvailable: boolean;
-  secDateOf: (track: string, date: string) => string | null; trackSpan: (track: string) => { start: string; end: string } | null; onBack: () => void; onCheck: (() => void) | null; backOnly?: boolean; backGround?: (() => void) | null;
+  secDateOf: (track: string, date: string) => string | null; trackSpan: (track: string) => { start: string; end: string } | null; onBack: () => void; onCheck: (() => void) | null; backOnly?: boolean; backGround?: (() => void) | null; fusion?: { recurrence: number | null; s1: number | null } | null;
 }) {
   const t = useT();
   const lang: Lang = useLang();
@@ -197,6 +197,12 @@ export default function DistrictDetail({ d, rank, rankOf, tracks, track, onTrack
 
       <Disclosure title={waterMax ? t('d.water', { max: waterMax }) : t('stat.water')} extra={waterMax ? null : <> {waterAvailable ? <NoData /> : <Pending />}</>}>
         {waterEntries.length > 0 && <WaterChart entries={waterEntries} max={waterEntries.length ? Math.max(...waterEntries.map((w) => w.pct)) : 0} />}
+        {fusion && (fusion.recurrence != null || fusion.s1 != null) && (
+          <dl className="stats">
+            {fusion.s1 != null && <div className="stat"><dt>{t('fq.s1')}</dt><dd><span className="stat-val"><span className="mono">{fmtNum(fusion.s1 * 100, 1)}</span> %</span></dd></div>}
+            {fusion.recurrence != null && <div className="stat"><dt>{t('fq.nisar')}</dt><dd><span className="stat-val"><span className="mono">{fmtNum(fusion.recurrence * 100, 1)}</span> %</span></dd></div>}
+          </dl>
+        )}
         <p className="comp-sub">{t('d.waterCaveat')}</p>
       </Disclosure>
       <Disclosure title={pop ? t('d.people', { pop }) : t('d.pop')}>

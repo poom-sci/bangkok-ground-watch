@@ -22,8 +22,13 @@ What the numbers are, and are not
   los_sum_mm    sum of the pair means per track. Only a cumulative value if the pairs are consecutive
                 (they are for the 2026-06 to 2026-10 Bangkok pairs: each pair starts where the last ended).
   index         0-100 screening index = mean of the percentile ranks of (highest water share,
-                |los_sum_mm|, population density). A way to sort districts, not a risk estimate
-                for any building.
+                population density), index_method "water+population". A way to sort districts,
+                not a risk estimate for any building.
+                LOS is not part of it: the per-pair LOS means are dominated by atmosphere (per
+                district the sum of the odd-numbered pairs anticorrelates with the sum of the
+                even-numbered pairs, and the two tracks disagree in sign in 14 of 49 districts),
+                so LOS must not drive a ranking. los, los_sum_mm and los_abs_mm stay as data.
+  index_with_los  the previous index (water, |los_sum_mm|, population density), kept for comparison.
 """
 import argparse
 import datetime as dt
@@ -149,7 +154,10 @@ def main():
     for i, r in enumerate(rows):
         parts = [rk[i] for rk in ranks if rk[i] is not None]
         has_sar = ranks[0][i] is not None or ranks[1][i] is not None
-        r["index"] = round(sum(parts) / len(parts), 1) if parts and has_sar else None
+        r["index_with_los"] = round(sum(parts) / len(parts), 1) if parts and has_sar else None
+        parts = [rk[i] for rk in (ranks[0], ranks[2]) if rk[i] is not None]
+        r["index"] = round(sum(parts) / len(parts), 1) if ranks[0][i] is not None else None
+        r["index_method"] = "water+population"
 
     out = {
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),

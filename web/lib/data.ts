@@ -35,8 +35,23 @@ export interface District {
   water: WaterEntry[];
 }
 
+export interface FusionClass { cls: string; colour: string | null; definition: string }
+export interface Fusion {
+  layer: Layer;
+  legend: FusionClass[];
+  pixels: number | null; spearman: number | null; spearmanDistricts: number | null;
+  nisarEverHigh: number | null; nisarEverZero: number | null;
+  caveats: string[];
+  noise: { disagree: number; both: number } | null;
+  lcWater: { date: string; track: string; cls: number; label: string; pct: number }[];
+  cropland: Record<string, { first: string; min: string; last: string; pct: Record<string, number> }>;
+  perDistrict: Record<string, { recurrence: number | null; s1: number | null }>;
+  s1Threshold: number | null;
+}
+
 export interface Dataset {
   failed: boolean;
+  fusion: Fusion | null;
   districtsOk: boolean;
   gunwSpan: { from: string; to: string } | null;
   waterSpan: { from: string; to: string } | null;
@@ -133,8 +148,47 @@ function parseDistricts(j: unknown, geo: FeatureCollection): District[] {
   return districts;
 }
 
+function parseFusion(j: unknown, generated: string | null): Fusion | null {
+  if (!isObj(j) || !isObj(j.overlay) || !isObj(j.agreement)) return null;
+  const bounds = parseBounds(j.overlay.bounds);
+  const img = str(j.overlay.image);
+  if (!bounds || !img) return null;
+  const v = generated ? `?v=${encodeURIComponent(generated)}` : '';
+  const a = j.agreement;
+  const method = isObj(j.method) ? j.method : {};
+  const th = isObj(method.thresholds) ? method.thresholds : {};
+  const noise = isObj(j.los_noise) ? j.los_noise : {};
+  const dis = finite(noise.sign_disagree_districts), both = finite(noise.districts_with_both_tracks);
+  const cyc = isObj(j.cropland_cycle) ? j.cropland_cycle : {};
+  const cropland: Fusion['cropland'] = {};
+  Object.entries(cyc).forEach(([k, raw]) => {
+    if (!isObj(raw) || !isObj(raw.water_pct)) return;
+    const pct: Record<string, number> = {};
+    Object.entries(raw.water_pct).forEach(([d, x]) => { const n = finite(x); if (n != null) pct[d] = n; });
+    const first = str(raw.first_date), min = str(raw.min_date), last = str(raw.last_date);
+    if (first && min && last) cropland[k] = { first, min, last, pct };
+  });
+  const perDistrict: Fusion['perDistrict'] = {};
+  arr(j.districts).forEach((d) => { if (isObj(d) && str(d.dcode)) perDistrict[String(d.dcode)] = { recurrence: finite(d.nisar_recurrence_mean), s1: finite(d.s1_frequency_mean) }; });
+  return {
+    layer: { id: 'L9999', type: 'water', date: '', secDate: null, track: '', url: `/data/${img}${v}`, bounds, thresholdDb: null },
+    legend: arr(j.overlay.legend).flatMap((x) => (isObj(x) && str(x.class) && str(x.definition) ? [{ cls: String(x.class), colour: str(x.colour), definition: String(x.definition) }] : [])),
+    pixels: finite(a.pixels), spearman: finite(a.spearman), spearmanDistricts: finite(a.spearman_districts),
+    nisarEverHigh: finite(a.nisar_ever_water_pct_where_s1_high), nisarEverZero: finite(a.nisar_ever_water_pct_where_s1_zero),
+    caveats: arr(method.caveats).flatMap((x) => str(x) ?? []),
+    noise: dis != null && both != null ? { disagree: dis, both } : null,
+    lcWater: arr(j.landcover_water).flatMap((x) => {
+      if (!isObj(x)) return [];
+      const date = str(x.date), track = str(x.track), label = str(x.label), cls = finite(x.class), pct = finite(x.water_pct);
+      return date && track && label && cls != null && pct != null ? [{ date, track, label, cls, pct }] : [];
+    }),
+    cropland, perDistrict, s1Threshold: finite(th.s1_frequency),
+  };
+}
+
 export async function loadDataset(): Promise<Dataset> {
-  const [mf, df, gf] = await Promise.all([getJson('/data/manifest.json'), getJson('/data/districts.json'), getJson('/data/bkk_districts.geojson')]);
+  const [mf, df, gf, ff] = await Promise.all([getJson('/data/manifest.json'), getJson('/data/districts.json'), getJson('/data/bkk_districts.geojson'), getJson('/data/fusion.json')]);
+  const fusion = parseFusion(ff.json, isObj(ff.json) ? str(ff.json.generated) : null);
   const { layers, rangeMm, source } = parseLayers(mf.json);
   const geo = isObj(gf.json) && Array.isArray(gf.json.features) ? (gf.json as unknown as FeatureCollection) : null;
   const districts = geo ? parseDistricts(df.json, geo) : [];
@@ -147,7 +201,7 @@ export async function loadDataset(): Promise<Dataset> {
   const wDates = layers.filter((l) => l.type === 'water').map((l) => l.date).sort();
   const waterSpan = wDates.length ? { from: wDates[0], to: wDates[wDates.length - 1] } : null;
   const districtsOk = isObj(df.json) && arr(df.json.districts).length > 0;
-  return { failed: mf.failed, districtsOk, gunwSpan, waterSpan, rangeMm, layers, districts, geo, isNisar };
+  return { failed: mf.failed, fusion, districtsOk, gunwSpan, waterSpan, rangeMm, layers, districts, geo, isNisar };
 }
 
 export function useDataset(): LoadState {
