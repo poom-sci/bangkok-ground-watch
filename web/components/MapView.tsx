@@ -36,10 +36,12 @@ interface Props {
   label: string;
   site: SiteProps | null;
   fitKey?: number;
-  base: 'sat' | 'map';
+  base: 'esri' | 's2' | 'map';
+  labels?: boolean;
+  marker?: { lat: number; lng: number } | null;
   lang?: 'en' | 'th';
   extra?: { layer: Layer; opacity: number }[];
-  onMove?: (lng: number, lat: number) => void;
+  onMove?: (lng: number, lat: number, zoom: number) => void;
   city?: CityOutline | null;
   cityMask?: boolean;
   districtLines?: boolean;
@@ -77,6 +79,7 @@ function boundsOf(f: Feature): maplibregl.LngLatBoundsLike | null {
   return b.isEmpty() ? null : b;
 }
 
+const ESRI_ATTR = 'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 export const SAT_PAINT = { 'raster-brightness-max': 0.65, 'raster-saturation': -0.35, 'raster-contrast': 0.1 };
 const SAT_ATTR = 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noopener noreferrer">EOX IT Services GmbH</a> (contains modified Copernicus Sentinel data 2016)';
 
@@ -94,6 +97,7 @@ export default function MapView(p: Props) {
   const failed = useRef(new Set<string>());
   const zOrder = useRef(new Map<string, number>());
   const cityKeyRef = useRef('');
+  const gMarker = useRef<maplibregl.Marker | null>(null);
   const areaMarkers = useRef<maplibregl.Marker[]>([]);
   const pinMarker = useRef<maplibregl.Marker | null>(null);
   const areaKey = useRef('');
@@ -167,7 +171,7 @@ export default function MapView(p: Props) {
     map.setLayoutProperty('dist-hit', 'visibility', dv);
     const av = site ? 'visible' : 'none';
     map.setLayoutProperty('area-fill', 'visibility', av);
-    map.setLayoutProperty('area-line', 'visibility', av);
+    map.setLayoutProperty('area-line', 'visibility', av); map.setLayoutProperty('area-casing', 'visibility', av);
     map.setLayoutProperty('area-dash', 'visibility', av);
     const city = cur.city ?? null;
     const bk = site?.areas.find((a) => a.id === 'bangkok') ?? null;
@@ -199,6 +203,10 @@ export default function MapView(p: Props) {
         areaMarkers.current.push(new maplibregl.Marker({ element: el, anchor: 'top-left', offset: [8, 8] }).setLngLat([a.bbox[0], a.bbox[3]]).addTo(map));
       });
     }
+    if (!site && cur.marker && map) {
+      if (!gMarker.current) { const el = document.createElement('div'); el.className = 'pin'; el.setAttribute('role', 'img'); gMarker.current = new maplibregl.Marker({ element: el }).setLngLat([cur.marker.lng, cur.marker.lat]).addTo(map); }
+      gMarker.current.setLngLat([cur.marker.lng, cur.marker.lat]);
+    } else if (gMarker.current) { gMarker.current.remove(); gMarker.current = null; }
     if (site?.pin) {
       const covered = site.areas.some((a) => inBox(a.bbox, site.pin!.lat, site.pin!.lng));
       if (!pinMarker.current) { const el = document.createElement('div'); el.classList.add('pin'); el.setAttribute('role', 'img'); pinMarker.current = new maplibregl.Marker({ element: el }).setLngLat([site.pin.lng, site.pin.lat]).addTo(map); }
@@ -209,7 +217,11 @@ export default function MapView(p: Props) {
     } else if (pinMarker.current) { pinMarker.current.remove(); pinMarker.current = null; }
     if (site) site.centerRef.current = () => { const c = map.getCenter(); return { lat: c.lat, lng: c.lng }; };
     if (map.getLayer('sat')) {
-      map.setLayoutProperty('sat', 'visibility', cur.base === 'sat' ? 'visible' : 'none');
+      map.setLayoutProperty('sat', 'visibility', cur.base === 's2' ? 'visible' : 'none');
+      map.setLayoutProperty('esri', 'visibility', cur.base === 'esri' ? 'visible' : 'none');
+      const lv = cur.base !== 'map' && cur.labels !== false ? 'visible' : 'none';
+      map.setLayoutProperty('esri-places', 'visibility', lv);
+      map.setLayoutProperty('esri-trans', 'visibility', lv);
       map.setLayoutProperty('base', 'visibility', cur.base === 'map' ? 'visible' : 'none');
     }
     const vis = radar ? 'none' : 'visible';
@@ -237,15 +249,19 @@ export default function MapView(p: Props) {
         version: 8,
         sources: {
           base: { type: 'raster', tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'] },
+          esri: { type: 'raster', tileSize: 256, maxzoom: 19, attribution: ESRI_ATTR, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] },
+          esriplaces: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'] },
+          esritrans: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'] },
           sat: { type: 'raster', tileSize: 256, maxzoom: 14, attribution: SAT_ATTR, tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'] },
         },
         layers: [
           { id: 'bg', type: 'background', paint: { 'background-color': token('--bg') } },
-          { id: 'sat', type: 'raster', source: 'sat', layout: { visibility: latest.current.base === 'sat' ? 'visible' : 'none' }, paint: SAT_PAINT },
+          { id: 'esri', type: 'raster', source: 'esri', layout: { visibility: latest.current.base === 'esri' ? 'visible' : 'none' } },
+          { id: 'sat', type: 'raster', source: 'sat', layout: { visibility: latest.current.base === 's2' ? 'visible' : 'none' }, paint: SAT_PAINT },
           { id: 'base', type: 'raster', source: 'base', layout: { visibility: latest.current.base === 'map' ? 'visible' : 'none' }, paint: { 'raster-saturation': -1, 'raster-brightness-min': 0.72, 'raster-brightness-max': 0.04, 'raster-contrast': 0.1 } },
         ],
       },
-      center: [100.5, 13.75], zoom: 9,
+      center: [100.5, 13.75], zoom: 9, maxZoom: 18,
       attributionControl: { compact: window.innerWidth < 768 },
     });
     mapRef.current = map;
@@ -257,12 +273,12 @@ export default function MapView(p: Props) {
       });
     };
     map.on('move', clampChips);
-    const setLoad = () => setImgLoading(latest.current.base === 'sat' && !!map.getSource('sat') && !map.isSourceLoaded('sat'));
-    map.on('sourcedata', (e) => { if ((e as { sourceId?: string }).sourceId === 'sat') setLoad(); });
+    const setLoad = () => { const id = latest.current.base === 'esri' ? 'esri' : 'sat'; setImgLoading(latest.current.base !== 'map' && !!map.getSource(id) && !map.isSourceLoaded(id)); };
+    map.on('sourcedata', (e) => { const id = (e as { sourceId?: string }).sourceId; if (id === 'sat' || id === 'esri') setLoad(); });
     map.on('idle', () => setImgLoading(false));
     const chipZoom = () => box.current?.classList.toggle('zoomed-out', map.getZoom() < 9);
     map.on('zoom', chipZoom); map.on('load', chipZoom);
-    const moved = () => { const c = map.getCenter(); latest.current.onMove?.(c.lng, c.lat); };
+    const moved = () => { const c = map.getCenter(); latest.current.onMove?.(c.lng, c.lat, map.getZoom()); };
     map.on('moveend', moved); map.on('load', moved);
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(box.current);
@@ -303,8 +319,11 @@ export default function MapView(p: Props) {
       map.addSource('areas', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas', layout: { visibility: 'none' }, paint: { 'fill-color': token('--map-area-fill'), 'fill-opacity': 0 } });
       map.addLayer({ id: 'area-dash', type: 'line', source: 'areas', filter: ['==', ['get', 'id'], 'bangkok'], layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': 1, 'line-opacity': 0.45, 'line-dasharray': [3, 3] } });
+      map.addLayer({ id: 'area-casing', type: 'line', source: 'areas', filter: ['!=', ['get', 'id'], 'bangkok'], layout: { visibility: 'none' }, paint: { 'line-color': '#000000', 'line-width': 4, 'line-opacity': 0.55, 'line-blur': 1 } });
       map.addLayer({ id: 'area-line', type: 'line', source: 'areas', filter: ['!=', ['get', 'id'], 'bangkok'], layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': parseFloat(token('--area-line')) || 1.5, 'line-opacity': 0.8 } });
       map.addLayer({ id: 'city-line', type: 'line', source: 'city', layout: { visibility: 'none' }, paint: { 'line-color': token('--map-line'), 'line-width': 2 } });
+      map.addLayer({ id: 'esri-places', type: 'raster', source: 'esriplaces', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.95 } });
+      map.addLayer({ id: 'esri-trans', type: 'raster', source: 'esritrans', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.8 } });
       map.on('click', (e) => { const s = latest.current.site; if (s) s.onPick(e.lngLat.lat, e.lngLat.lng); });
       map.addLayer({ id: 'dist-hit', type: 'fill', source: 'dist', paint: { 'fill-color': 'rgba(0,0,0,0)' } });
       map.addLayer({ id: 'dist-casing', type: 'line', source: 'dist', paint: {
@@ -353,7 +372,7 @@ export default function MapView(p: Props) {
     if (!map || !ready.current) return;
     labels.current.forEach((l) => l.m.remove());
     labels.current = [];
-    if (p.base !== 'sat' || !p.geo || p.site) return;
+    if (p.base !== 's2' || !p.geo || p.site) return;
     p.districts.forEach((d) => {
       const c = featureCentre(p.geo, d.dcode);
       if (!c) return;
@@ -396,7 +415,7 @@ export default function MapView(p: Props) {
   return (
     <>
       <div ref={box} className="map" role="region" aria-label={p.label} />
-      {imgLoading && p.base === 'sat' && <p className="base-loading" role="status">{loadingText}</p>}
+      {imgLoading && p.base !== 'map' && <p className="base-loading" role="status">{loadingText}</p>}
     </>
   );
 }

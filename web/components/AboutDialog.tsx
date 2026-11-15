@@ -7,7 +7,7 @@ import { sitingEnabled } from '@/lib/siting';
 import type { Key } from '@/lib/i18n';
 
 const bullets: Key[] = ['about.1', 'about.9', 'about.2', 'about.7', 'about.10', 'about.3', 'about.4', 'about.5', 'about.6', 'about.8'];
-const sources: Key[] = ['src.sat', 'src.1', 'src.2', 'src.3', 'src.4', 'src.5'];
+const sources: Key[] = ['src.esri', 'src.nom', 'src.sat', 'src.1', 'src.2', 'src.3', 'src.4', 'src.5'];
 
 export default function AboutDialog({ open, span, years, onClose, noise, sanity }: { open: boolean; sanity?: Record<string, number> | null; noise: { disagree: number; both: number } | null; span: { from: string; to: string } | null; years: { from: number; to: number } | null; onClose: () => void }) {
   const t = useT();
