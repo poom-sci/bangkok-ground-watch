@@ -22,7 +22,7 @@ function Row({ s, onPick, onRemove }: { s: SavedSite; onPick: (s: SavedSite) => 
           <span className="dmain">{s.areaId ? areaLabel(s.areaId, s.areaName, lang) : s.areaName || t('nodata')}</span>
           <span className="dsub">{date ? t('my.saved', { date }) : ''}</span>
         </span>
-        <span className="srow-score mono">{fmtNum(s.score, 0) ?? t('nodata')}</span>
+        {!s.urban && <span className="srow-score mono">{fmtNum(s.score, 0) ?? t('nodata')}</span>}
         {s.urban ? <span className="grade small none">{t('rated.pill')}</span> : s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}
       </button>
       <button type="button" className="btn icon-btn" aria-label={`${t('my.remove')}: ${s.areaName}`} title={t('my.remove')} onClick={() => onRemove(s)}>

@@ -213,7 +213,7 @@ export default function MapView(p: Props) {
       gMarker.current.setLngLat([cur.marker.lng, cur.marker.lat]);
     } else if (gMarker.current) { gMarker.current.remove(); gMarker.current = null; }
     const pt = cur.patch?.data ?? null;
-    const patchKey = pt ? pt.coords.join('|') : '';
+    const patchKey = pt ? `${pt.coords.join('|')}|${pt.url}` : '';
     if (patchKey !== patchApplied.current) {
       patchApplied.current = patchKey;
       if (pt) (map.getSource('patch') as maplibregl.ImageSource | undefined)?.updateImage({ url: pt.url, coordinates: pt.coords });
@@ -378,6 +378,7 @@ export default function MapView(p: Props) {
         map.fitBounds(b, { padding: first.padding, duration: 0 });
       }
       sync();
+      flySite();
     });
     return () => { ro.disconnect(); areaMarkers.current.forEach((m) => m.remove()); areaMarkers.current = []; areaKey.current = ''; pinMarker.current?.remove(); pinMarker.current = null; ready.current = false; patchApplied.current = ''; selPaint.current = ''; added.current.clear(); failed.current.clear(); zOrder.current.clear(); sel.current = null; hover.current = null; map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -34,7 +34,7 @@ export default function ShortlistPage({ sites, guest, onOpen, onRemove, onAdd, o
           <tbody>
             {sorted.map((s) => (
               <tr key={s.id}>
-                <td><span className="mono sc">{fmtNum(s.score, 0)}</span> {s.urban ? <span className="grade small none">{t('rated.pill')}</span> : s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}</td>
+                <td>{!s.urban && <span className="mono sc">{fmtNum(s.score, 0)}</span>} {s.urban ? <span className="grade small none">{t('rated.pill')}</span> : s.grade && <span className={`grade small ${s.grade}`}>{t(`grade.${s.grade}` as Key)}</span>}</td>
                 <td>{s.areaId ? areaLabel(s.areaId, s.areaName, lang) : s.areaName || t('nodata')}</td>
                 <td className="mono">{fmtNum(s.lat, 4)}, {fmtNum(s.lng, 4)}</td>
                 <td>{fmtDate(s.savedAt.slice(0, 10), lang) ?? t('nodata')}</td>

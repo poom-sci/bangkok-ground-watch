@@ -48,8 +48,9 @@ export function ConfLegend({ conf }: { conf: Confidence }) {
   const t = useT();
   const has = useHas();
   return (
-    <details className="score-legend glass" open>
+    <details className="score-legend glass">
       <summary>{t('cf.legend')}</summary>
+      <button type="button" className="btn sl-close" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>{t('about.close')}</button>
       <ul className="sl-ex">
         {conf.legend.map((c) => (
           <li key={c.id}>
@@ -80,7 +81,7 @@ export function ElevationChart({ elev, h }: { elev: NonNullable<Dataset['elev']>
   const xAt = (c: number) => { for (let i = 0; i < n - 1; i++) { if (c <= visCentres[i + 1]) { const a = visCentres[i], b = visCentres[i + 1]; return x(i) + ((c - a) / (b - a || 1)) * (x(i + 1) - x(i)); } } return x(n - 1); };
   const allPts = elev.all.filter((b) => b.recurrence != null).map((b, i) => `${Math.max(PL, Math.min(W - PR, xAt(centre(b, i))))},${y(b.recurrence as number)}`).join(' ');
   const line = vis.map((b, i) => `${x(i)},${y(b.recurrence ?? 0)}`).join(' ');
-  const sentence = at >= 0 && vis[at].everWet != null ? t('el.sentence', { h: fmtNum(h, 1) ?? '', p: fmtNum(vis[at].everWet, 0) ?? '' }) : null;
+  const sentence = at >= 0 && vis[at].recurrence != null ? t('el.sentence', { h: fmtNum(h, 1) ?? '', p: fmtNum(vis[at].recurrence, 1) ?? '' }) : null;
   const lang = useLang();
   return (
     <figure className="chart wc el">

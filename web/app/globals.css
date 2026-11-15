@@ -1006,3 +1006,8 @@ ol { margin: 0; padding: 0; }
 .sb-pop ul li.on, .sb-pop ul li:hover { background: var(--bg); box-shadow: inset 3px 0 0 var(--brand); }
 .sb-note { font-size: var(--t-cap); margin-top: var(--s1); }
 @media (max-width: 767px) { .search-box.compact { flex: 1 1 100%; max-width: none; order: -1; } .map-switch { left: var(--s3); right: var(--s3); } .map-switch .seg-btn { font-size: 12px; } .score-legend { top: 64px; } .place-card { width: calc(100% - 24px); } }
+
+.map-switch .seg-btn { flex: 0 0 auto; white-space: nowrap; padding: 0 var(--s3); }
+.score-legend[open] { max-height: 30%; overflow: auto; }
+.score-legend .sl-close { min-height: 32px; margin: var(--s1) 0; font-size: var(--t-sm); }
+@media (max-width: 767px) { .map-switch .seg { width: 100%; } .map-switch .seg-btn { flex: 1 1 auto; padding: 0 var(--s2); } .score-legend[open] { max-height: 30%; } }

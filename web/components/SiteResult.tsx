@@ -120,7 +120,7 @@ function Body({ suit, ev, onEvidence, saved, onSave, years, example, nisar, excl
       {radar?.sample && radar.conf && <TwoRadarBlock sample={radar.sample} conf={radar.conf} landcover={suit.landcover} />}
       {!excluded && (
         <>
-          <Comp title={t('comp.flood')} text={floodText} sub={yearsPct ? t('comp.flood.years', { p: yearsPct, from: years ? fmtYear(years.from, lang) : '2017', to: years ? fmtYear(years.to, lang) : '2025' }) : null} sub2={suit.floodSub} />
+          <Comp title={t('comp.flood')} text={floodText} sub={yearsPct ? t('comp.flood.years', { p: yearsPct, from: years ? fmtYear(years.from, lang) : fmtYear(2017, lang), to: years ? fmtYear(years.to, lang) : fmtYear(2025, lang) }) : null} sub2={suit.floodSub} />
           <Comp title={t('comp.elev')} text={h ? t('comp.elev.v', { h }) : null} sub={pf ? t('comp.elev.p', { p: pf }) : null} note={pf ? t('comp.elev.note') : null} sub2={suit.elevSub} />
           {radar?.elev && suit.elevValue != null && <ElevationChart elev={radar.elev} h={suit.elevValue} />}
           {(things.length > 0 || years) && (

@@ -50,7 +50,7 @@ function LosChart({ points, trackLabel, span }: { points: (LosEntry & { mean: nu
           {band && <polygon points={band} className="band" />}
           {n > 1 && <polyline points={line} className="line" fill="none" />}
           {points.map((p, i) => (
-            <g key={p.date} onClick={() => setSel(i)}>
+            <g key={p.date} onClick={() => setSel(i)} onPointerEnter={() => setSel(i)}>
               <circle cx={x(i)} cy={y(p.mean)} r={12} fill="transparent" />
               <circle cx={x(i)} cy={y(p.mean)} r={i === sel ? 6 : 4} className={`dot${i === sel ? ' on' : ''}`} />
             </g>
@@ -90,7 +90,7 @@ function WaterChart({ entries, max }: { entries: (WaterEntry & { pct: number })[
             const h = e.pct > 0 ? Math.max(3, (e.pct / top2) * (base - top)) : 3;
             const bx = PL + i * slot + (slot - BW) / 2;
             return (
-              <g key={`${e.track}${e.date}`} onClick={() => setSel(i)}>
+              <g key={`${e.track}${e.date}`} onClick={() => setSel(i)} onPointerEnter={() => setSel(i)}>
                 <rect x={PL + i * slot} y={top} width={slot} height={base - top} fill="transparent" />
                 <rect x={bx} y={base - h} width={BW} height={h} className={e.pct > 0 ? 'bar-w' : 'bar-w zero-bar'} />
                 {i === sel && <rect x={bx - 2} y={base - h - 2} width={BW + 4} height={h + 4} className="bar-sel" />}

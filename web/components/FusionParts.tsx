@@ -70,7 +70,7 @@ export function WaterByCover({ f, track }: { f: Fusion; track: string }) {
   if (cyc) {
     const xv = cyc.pct[cyc.first], yv = cyc.pct[cyc.min], zv = cyc.pct[cyc.last];
     if (xv != null && yv != null && zv != null && built.length) {
-      sentence = t('wc.sentence', { x: fmtNum(xv, 0) ?? '', y: fmtNum(yv, 0) ?? '', z: fmtNum(zv, 0) ?? '', m: String(Math.ceil(Math.max(...built))) });
+      sentence = t('wc.sentence', { x: fmtNum(xv, 0) ?? '', y: fmtNum(yv, 0) ?? '', z: fmtNum(zv, 0) ?? '', m: fmtNum(Math.ceil(Math.max(...built) * 10) / 10, 1) ?? '' });
     }
   }
   const dash = ['', '5 3', '1 3'];

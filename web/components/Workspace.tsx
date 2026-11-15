@@ -171,6 +171,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
     if (!isSite) return;
     const own = route.lat != null && route.lng != null;
     if (!own && !route.area && !site.areas) return;
+    if (!own && route.area && !site.areas) return;
     const key = own ? `${route.lat},${route.lng}` : route.area ? `area:${route.area}` : 'example';
     if (key === handled.current) return;
     handled.current = key;
@@ -331,7 +332,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
     </div>
   );
 
-  const trackOptions = allTracks.map((k) => { const p = parseTrack(k); return { value: k, label: `${p ? t(p.dir === 'A' ? 'track.A' : 'track.D', { n: p.n }) : k} · ${t('track.cov', { k: coverage[k] ?? 0, n: data.districts.length })}`, disabled: !availableTracks.has(k) }; });
+  const trackOptions = allTracks.map((k) => { const p = parseTrack(k); return { value: k, label: `${p ? t(p.dir === 'A' ? 'track.As' : 'track.Ds', { n: p.n }) : k} · ${coverage[k] ?? 0}/${data.districts.length}`, full: `${p ? t(p.dir === 'A' ? 'track.A' : 'track.D', { n: p.n }) : k} · ${t('track.cov', { k: coverage[k] ?? 0, n: data.districts.length })}`, disabled: !availableTracks.has(k) }; });
   const pairCover = type === 'gunw' && date && data.districts.length ? t('pair.cover', { n: data.districts.filter((d) => d.los.some((x) => x.track === track && x.date === date && x.mean != null)).length, m: data.districts.length }) : null;
   const missing = data.districts.filter((d) => !d.los.some((x) => x.track === track && x.mean != null));
   const popWrap = (content: React.ReactNode) => (
@@ -464,7 +465,7 @@ export default function Workspace({ data, onLang: setLangRaw, lang }: { data: Da
           {isGround && place && placeDistrict && <div className="place-card glass"><p className="dmain">{place.name}</p><button type="button" className="btn" onClick={() => openDistrict(placeDistrict.dcode)}>{t('sr.open', { district: lang === 'en' ? placeDistrict.nameEn : placeDistrict.nameTh })}</button></div>}
           {isSite && <div className="crosshair" role="img" aria-label={t('site.crosshair')} />}
           {isSite && data.confidence && siteLayer === 'conf' && (confOn || patchShown) && <ConfLegend conf={data.confidence} />}
-          {isSite && data.scoreMaps && siteLayer === 'score' && (scoreOn || patchShown) && <ScoreLegend key={wholeOn ? 'w' : 'p'} maps={data.scoreMaps} areaId={viewArea} defaultOpen={wholeOn && !phone} dashed={!!cityRaw} />}
+          {isSite && data.scoreMaps && siteLayer === 'score' && (scoreOn || patchShown) && <ScoreLegend key={wholeOn ? 'w' : 'p'} maps={data.scoreMaps} areaId={viewArea} defaultOpen={false} dashed={!!cityRaw} />}
           {isSite && overlayOn && <div className="map-legend glass"><Legend mode="radar" type="gunw" layer={latestLos} rangeMm={data.rangeMm} isNisar={data.isNisar} /></div>}
           {site.areas && isSite && !site.pin && <div className="map-hint glass"><p>{t('site.hint')}</p><button type="button" className="btn" onClick={tryExample}>{t('site.tryex')}</button></div>}
         </div>

@@ -22,7 +22,7 @@ export const Chevron = ({ open }: { open: boolean }) => (
   <svg className={`icon chev${open ? ' open' : ''}`} viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
 );
 
-export interface SegOption<V extends string> { value: V; label: string; disabled?: boolean; tag?: string }
+export interface SegOption<V extends string> { value: V; label: string; full?: string; disabled?: boolean; tag?: string }
 
 export function Segmented<V extends string>({ label, options, value, onChange, disabled }: {
   label: string; options: SegOption<V>[]; value: V; onChange: (v: V) => void; disabled?: boolean;
@@ -32,7 +32,7 @@ export function Segmented<V extends string>({ label, options, value, onChange, d
       {options.map((o) => {
         const off = disabled || o.disabled;
         return (
-          <button key={o.value} type="button" className="seg-btn" aria-pressed={value === o.value} disabled={off} aria-disabled={off || undefined}
+          <button key={o.value} type="button" className="seg-btn" title={o.full} aria-label={o.full} aria-pressed={value === o.value} disabled={off} aria-disabled={off || undefined}
             onClick={() => onChange(o.value)}>
             {value === o.value && !off && <Check />}
             <span>{o.label}</span>

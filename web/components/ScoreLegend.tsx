@@ -25,6 +25,7 @@ export default function ScoreLegend({ maps, areaId, defaultOpen, dashed }: { map
   return (
     <details className="score-legend glass" open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
       <summary>{t('score.legend')}</summary>
+      <button type="button" className="btn sl-close" onClick={() => setOpen(false)}>{t('about.close')}</button>
       <p className="sl-h">{t('score.title')}</p>
       <ul className="sl-ramp">
         {maps.ramp.map((r) => <li key={r.range}><span className="sw" style={{ background: r.colour }} /><span className="mono">{r.range}</span></li>)}
