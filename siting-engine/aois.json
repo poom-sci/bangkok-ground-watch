@@ -2,35 +2,110 @@
   "_comment": "One entry per AOI. bbox is [west, south, east, north] (WGS84). Orbits are state/relative-orbit as in Planetary Computer sentinel-1-rtc. wet = first,last month of the wet season. optical_targets are dates near a known flood; the script picks the least cloudy Sentinel-2 date within optical_window days. pair_dates are Sentinel-1 dates (VV+VH) used by calibrate.py against the Sentinel-2 scene.",
   "ayutthaya": {
     "name": "Ayutthaya",
-    "bbox": [100.50, 14.15, 100.70, 14.40],
-    "orbits": ["descending/62"],
-    "wet": [8, 11],
-    "years": [2017, 2025],
-    "optical_targets": ["2022-10-18", "2022-10-23"],
+    "bbox": [
+      100.5,
+      14.15,
+      100.7,
+      14.4
+    ],
+    "orbits": [
+      "descending/62"
+    ],
+    "wet": [
+      8,
+      11
+    ],
+    "years": [
+      2017,
+      2025
+    ],
+    "optical_targets": [
+      "2022-10-18",
+      "2022-10-23"
+    ],
     "optical_window": 0,
-    "pair_dates": ["2022-10-23"],
+    "pair_dates": [
+      "2022-10-23"
+    ],
     "why": "Central plain, repeated flooding in the Chao Phraya basin (2011, 2021-2022, 2025). First prototype."
   },
   "hatyai": {
     "name": "Hat Yai",
-    "bbox": [100.35, 6.90, 100.60, 7.12],
-    "orbits": ["descending/164", "ascending/70"],
-    "wet": [10, 12],
-    "years": [2017, 2025],
-    "optical_targets": ["2025-11-23"],
+    "bbox": [
+      100.35,
+      6.9,
+      100.6,
+      7.12
+    ],
+    "orbits": [
+      "descending/164",
+      "ascending/70"
+    ],
+    "wet": [
+      10,
+      12
+    ],
+    "years": [
+      2017,
+      2025
+    ],
+    "optical_targets": [
+      "2025-11-23"
+    ],
     "optical_window": 10,
-    "pair_dates": ["2025-11-23", "2025-11-29", "2025-12-05"],
+    "pair_dates": [
+      "2025-11-23",
+      "2025-11-29",
+      "2025-12-05"
+    ],
     "why": "Flood of 21-23 Nov 2025 (335 mm in one day). Known event date, used to calibrate the water rule. Two orbits because descending/164 has gaps (none in 2023)."
   },
   "samutsakhon": {
     "name": "Samut Sakhon",
-    "bbox": [100.20, 13.45, 100.42, 13.65],
-    "orbits": ["descending/62"],
-    "wet": [8, 11],
-    "years": [2017, 2025],
+    "bbox": [
+      100.2,
+      13.45,
+      100.42,
+      13.65
+    ],
+    "orbits": [
+      "descending/62"
+    ],
+    "wet": [
+      8,
+      11
+    ],
+    "years": [
+      2017,
+      2025
+    ],
     "optical_targets": [],
     "optical_window": 7,
     "pair_dates": [],
     "why": "Industrial coast with the fastest land subsidence in Thailand (about 20 mm/yr in recent InSAR studies). Subsidence itself is not measured yet (needs InSAR)."
+  },
+  "bangkok": {
+    "name": "Bangkok",
+    "bbox": [
+      100.32,
+      13.48,
+      100.95,
+      13.97
+    ],
+    "orbits": [
+      "descending/62"
+    ],
+    "wet": [
+      8,
+      11
+    ],
+    "years": [
+      2017,
+      2025
+    ],
+    "optical_targets": [],
+    "optical_window": 7,
+    "pair_dates": [],
+    "why": "All 50 Bangkok districts, so Site check overlaps the NISAR Ground watch window. Added locally for the Space Apps demo; not calibrated against optical."
   }
 }

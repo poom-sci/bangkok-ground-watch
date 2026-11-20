@@ -22,7 +22,7 @@ An interactive web app that turns NISAR L-band radar into a map anyone can read:
 | `DESIGN.md` | The interface specification the app was built from. |
 | `SUBMISSION_DRAFT.md` | Project description, data list, limits and the demo outline. |
 
-The Site Scout mode calls a separate service, the site suitability engine written by a teammate (repository `Thanut-Junnim26/solsat-siting`, FastAPI, Sentinel-1 RTC 2017 to 2025, Copernicus DEM, ESA WorldCover, NASA POWER). The deployed engine serves three areas: Ayutthaya, Samut Sakhon, and a Bangkok area added for this demo with bbox `[100.32, 13.48, 100.95, 13.97]`, orbit `descending/62`, wet season August to November.
+The Site Scout mode calls a separate service, the site suitability engine written by a teammate, Thanut Junnim. Its source is included in this repository under [`siting-engine/`](siting-engine/) with its original commit history (FastAPI, Sentinel-1 RTC 2017 to 2025, Copernicus DEM, ESA WorldCover, NASA POWER). The deployed engine serves three areas: Ayutthaya, Samut Sakhon, and a Bangkok area added for this demo with bbox `[100.32, 13.48, 100.95, 13.97]`, orbit `descending/62`, wet season August to November.
 
 ## Data in the app (as of 15 November 2026)
 

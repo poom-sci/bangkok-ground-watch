@@ -21,7 +21,7 @@ web/screenshots/
 .claude-tmp
 .DS_Store
 
-# Separate repository (site suitability engine by a teammate), not part of this one
+# Local working clone of the teammate's engine repository; the committed copy lives in siting-engine/
 solsat-siting/
 
 # Internal working notes
