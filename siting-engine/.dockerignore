@@ -1,0 +1,8 @@
+# allow-list: only what the image needs. data/.gitkeep must stay so `COPY data` works when no data is built (CI).
+*
+!pyproject.toml
+!uv.lock
+!.python-version
+!README.md
+!src/**
+!data/**
